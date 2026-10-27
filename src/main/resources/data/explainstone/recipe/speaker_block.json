@@ -1,0 +1,24 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "redstone",
+  "pattern": [
+    " m ",
+    "mnm",
+    "mom"
+  ],
+  "key": {
+    "m": {
+      "item": "minecraft:iron_ingot"
+    },
+    "n": {
+      "item": "minecraft:note_block"
+    },
+    "o": {
+      "item": "minecraft:observer"
+    }
+  },
+  "result": {
+    "id": "explainstone:speaker_block",
+    "count": 1
+  }
+}

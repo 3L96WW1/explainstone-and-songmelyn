@@ -1,0 +1,24 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "redstone",
+  "pattern": [
+    " m ",
+    "mnm",
+    "mom"
+  ],
+  "key": {
+    "m": {
+      "item": "minecraft:white_wool"
+    },
+    "n": {
+      "item": "minecraft:note_block"
+    },
+    "o": {
+      "item": "minecraft:observer"
+    }
+  },
+  "result": {
+    "id": "explainstone:songmelyn_block",
+    "count": 1
+  }
+}
