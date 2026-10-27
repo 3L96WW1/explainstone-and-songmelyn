@@ -3,7 +3,7 @@
   "id": "explainstone",
   "version": "${version}",
   "name": "Explainstone and Songmelyn",
-  "description": "Explainstone and Songmelyn — stone speakers that play bundled or imported ogg music, with redstone triggering, channel broadcasting and receiving. Author: GINKA_3L96WW1, 2011.",
+  "description": "Explainstone and Songmelyn — stone speakers that play bundled or imported ogg music, with redstone triggering, channel broadcasting and receiving. Author: GINKA_3L96WW1.",
   "authors": [
     "GINKA_3L96WW1"
   ],
@@ -31,7 +31,6 @@
   },
   "contributors": [],
   "custom": {
-    "credit": "GINKA_3L96WW1 · 2011",
-    "since": "2011"
+    "credit": "GINKA_3L96WW1"
   }
 }

@@ -24,7 +24,7 @@ either imported by you (stored in the world, shared with other players) or strea
 Minecraft **1.21.1** / Fabric 模组：伪装成石头的音响，可以播放自带或你自己导入的 ogg 音乐，
 支持红石触发、频道广播（512 格信号）、收音、进度同步。
 
-作者：**GINKA_3L96WW1** · 2011
+作者：**GINKA_3L96WW1**
 
 模组 id：`explainstone`（为兼容存档保持不变）
 
@@ -32,10 +32,10 @@ Minecraft **1.21.1** / Fabric 模组：伪装成石头的音响，可以播放�
 
 ## 截图 / Screenshots
 
-| 六种讲解石 + 播放中的音符粒子 | 颂美铃（壁挂式教室广播音响） |
+| 添加了六种讲解石 | 颂美铃（壁挂式教室广播音响） |
 |---|---|
 | ![variants](docs/screenshots/01-variants.jpg) | ![songmelyn](docs/screenshots/03-songmelyn-wall.jpg) |
-| **广播发信器（`>broadcasting_system` 屏幕）** | **单台讲解石在野外播放** |
+| **广播发信器** | **默认纹理的讲解石** |
 | ![transmitter](docs/screenshots/05-transmitter.jpg) | ![field](docs/screenshots/04-speaker-in-field.jpg) |
 
 ## 功能

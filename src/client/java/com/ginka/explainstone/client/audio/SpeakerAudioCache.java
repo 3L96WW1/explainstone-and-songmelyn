@@ -2,7 +2,6 @@
  * explainstone —— 讲解石 / 颂美铃 / 广播发信器（Minecraft Fabric 1.21.1 模组）
  *
  *  作者 / Author : GINKA_3L96WW1
- *  2011
  *
  * 本文件由作者手工编写；贴图与模型由 tools/ 下的脚本程序化生成。
  * 保留此注释即可随意修改、分发。 喵
