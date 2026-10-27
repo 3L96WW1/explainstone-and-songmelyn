@@ -41,7 +41,7 @@ public class ModBlocks {
     public static final Block BROADCAST_TRANSMITTER = Registry.register(
             Registries.BLOCK,
             Identifier.of("explainstone", "broadcast_transmitter"),
-            new BroadcastTransmitterBlock(AbstractBlock.Settings.create().strength(3.0f).requiresTool())
+            new BroadcastTransmitterBlock(AbstractBlock.Settings.create().strength(1.05f))
     );
 
     static {
@@ -67,7 +67,7 @@ public class ModBlocks {
     private static Block registerSongmelyn() {
         Identifier id = Identifier.of("explainstone", "songmelyn_block");
         Block block = Registry.register(Registries.BLOCK, id,
-                new SongmelynBlock(AbstractBlock.Settings.create().strength(2.0f).requiresTool().nonOpaque()));
+                new SongmelynBlock(AbstractBlock.Settings.create().strength(1.05f).nonOpaque()));
         Registry.register(Registries.ITEM, id, new BlockItem(block, new Item.Settings()));
         return block;
     }
@@ -75,7 +75,7 @@ public class ModBlocks {
     private static Block register(String name) {
         Identifier id = Identifier.of("explainstone", name);
         Block block = Registry.register(Registries.BLOCK, id,
-                new SpeakerBlock(AbstractBlock.Settings.create().strength(2.0f).requiresTool().nonOpaque()));
+                new SpeakerBlock(AbstractBlock.Settings.create().strength(1.05f).nonOpaque()));
         Registry.register(Registries.ITEM, id, new BlockItem(block, new Item.Settings()));
         return block;
     }

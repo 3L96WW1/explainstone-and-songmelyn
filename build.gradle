@@ -3,7 +3,7 @@ plugins {
 	id 'maven-publish'
 }
 
-version = '1.0.0-beta+1.21.1'
+version = '1.0.1-beta+1.21.1'
 group = 'com.ginka.explainstone'
 
 base {
