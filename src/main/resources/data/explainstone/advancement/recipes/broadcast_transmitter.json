@@ -1,0 +1,16 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_the_recipe": {
+      "trigger": "minecraft:recipe_unlocked",
+      "conditions": {
+        "recipe": "explainstone:broadcast_transmitter"
+      }
+    }
+  },
+  "rewards": {
+    "recipes": [
+      "explainstone:broadcast_transmitter"
+    ]
+  }
+}
