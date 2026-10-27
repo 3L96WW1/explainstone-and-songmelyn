@@ -1,0 +1,39 @@
+# 打 tag（如 v1.0.0-beta）时自动构建并把 jar 挂到 GitHub Release 上
+name: release
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: checkout repository
+        uses: actions/checkout@v6
+      - name: validate gradle wrapper
+        uses: gradle/actions/wrapper-validation@v6
+      - name: setup jdk
+        uses: actions/setup-java@v5
+        with:
+          java-version: '21'
+          distribution: 'microsoft'
+      - name: make gradle wrapper executable
+        run: chmod +x ./gradlew
+      - name: build
+        run: ./gradlew build
+      - name: collect mod jar
+        run: |
+          mkdir -p dist
+          cp build/libs/*.jar dist/ || true
+          rm -f dist/*-sources.jar
+          ls -l dist
+      - name: create release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*.jar
+          body_path: RELEASE_NOTES.md
+          prerelease: ${{ contains(github.ref_name, 'beta') || contains(github.ref_name, 'alpha') }}
+          fail_on_unmatched_files: true

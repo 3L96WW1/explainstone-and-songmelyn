@@ -44,3 +44,6 @@ audio-src/
 
 # 临时工作目录
 .scratch/
+
+# release workflow 中间产物
+dist/

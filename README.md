@@ -52,6 +52,19 @@ Minecraft **1.21.1** / Fabric 模组：伪装成石头的音响，可以播放�
 - 音频：MC 声音设置里的 **「唱片机（Records）」滑块** 独立控制所有讲解石音量，另有每方块自己的音量百分比
 - 导入音频：随时导入任意 **.ogg**（导入后存进**存档**，多人可共享，缺文件会自动下载）
 
+## 下载 / Download
+
+**玩家**：到 [Releases](https://github.com/3L96WW1/explainstone-and-songmelyn/releases) 下载最新的
+`explainstone-and-songmelyn-*.jar`，和 [Fabric API](https://modrinth.com/mod/fabric-api) 一起丢进 `mods/` 即可（需要 Fabric Loader ≥ 0.20.1 + Java 21）。
+
+**想自己构建**：
+
+```bash
+git clone https://github.com/3L96WW1/explainstone-and-songmelyn.git
+cd explainstone-and-songmelyn
+./gradlew build      # 产物在 build/libs/
+```
+
 ## 安装
 
 1. 安装 [Fabric Loader](https://fabricmc.net/use/) ≥ 0.20.1，Minecraft **1.21.1**，Java 21
