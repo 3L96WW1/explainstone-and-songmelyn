@@ -71,20 +71,30 @@ Minecraft **1.21.1** / Fabric 模组：伪装成石头的音响，可以播放�
 - 单文件上限 **6MB**、时长上限 **5 分钟**（超过会被拒绝并提示）
 - 导入的音频保存在 `<存档>/explainstone/audio/`，会把存档撑大，删存档时一起删除
 
-## 配方
+## 合成配方 / Crafting
 
-| 方块 | 配方 |
-|---|---|
-| 讲解石（默认） | `·M·` / `MNM` / `MOM`，M = **铁锭** |
-| 石头讲解石 | 同上，M = 石头 |
-| 圆石讲解石 | M = 圆石 |
-| 花岗岩讲解石 | M = 花岗岩 |
-| 闪长岩讲解石 | M = 闪长岩 |
-| 安山岩讲解石 | M = 安山岩 |
-| 颂美铃 | 同上形状，M = **白色羊毛** |
-| 广播发信器 | `TAT` / `IOI` / `RCI`（T=红石火把 A=紫水晶碎片 I=铁锭 O=侦测器 R=红石粉 C=比较器） |
+六种讲解石和颂美铃**共用同一个形状**，只是外壳材料 `M` 不同：
 
-（表中 N = 音符盒，O = 侦测器）
+```
+ · M ·
+ M N M
+ M O M
+```
+
+- `N` = **音符盒**，`O` = **侦测器**，`M` = 外壳材料（见下表）
+- 广播发信器是**另一套形状**：`T A T` / `I O I` / `R C I`
+  （`T` 红石火把、`A` 紫水晶碎片、`I` 铁锭、`O` 侦测器、`R` 红石粉、`C` 红石比较器）
+
+| 方块 | 材料 M | 配方预览 |
+|---|---|---|
+| 讲解石 | **铁锭** | <img src="docs/recipes/speaker.jpg" width="260"> |
+| 石头讲解石 | 石头 | <img src="docs/recipes/stone.jpg" width="260"> |
+| 圆石讲解石 | 圆石 | <img src="docs/recipes/cobblestone.jpg" width="260"> |
+| 花岗岩讲解石 | 花岗岩 | <img src="docs/recipes/granite.jpg" width="260"> |
+| 闪长岩讲解石 | 闪长岩 | <img src="docs/recipes/diorite.jpg" width="260"> |
+| 安山岩讲解石 | 安山岩 | <img src="docs/recipes/andesite.jpg" width="260"> |
+| 颂美铃 | **白色羊毛** | <img src="docs/recipes/songmelyn.jpg" width="260"> |
+| 广播发信器 | 见上面的特殊形状 | <img src="docs/recipes/transmitter.jpg" width="260"> |
 
 ## 已知限制
 

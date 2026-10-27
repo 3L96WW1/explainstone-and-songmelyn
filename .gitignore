@@ -41,3 +41,6 @@ replay_*.log
 
 # 本地素材/备份（不进仓库也不进 jar）
 audio-src/
+
+# 临时工作目录
+.scratch/
