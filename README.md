@@ -1,5 +1,26 @@
 # Explainstone and Songmelyn · 讲解石与颂美铃
 
+[![build](https://github.com/3L96WW1/explainstone-and-songmelyn/actions/workflows/build.yml/badge.svg)](https://github.com/3L96WW1/explainstone-and-songmelyn/actions/workflows/build.yml)
+[![license](https://img.shields.io/badge/license-MPL--2.0-blue)](LICENSE)
+![minecraft](https://img.shields.io/badge/Minecraft-1.21.1-green)
+![fabric](https://img.shields.io/badge/Fabric-0.20.1%2B-orange)
+
+![Explainstone and Songmelyn](docs/screenshots/02-variants-playing.jpg)
+
+### English summary
+
+**Explainstone and Songmelyn** adds stone speakers to Minecraft 1.21.1 (Fabric) that play **Ogg Vorbis** music —
+either imported by you (stored in the world, shared with other players) or streamed from a broadcast transmitter.
+
+- 6 Explainstone variants (rock / stone / cobblestone / granite / diorite / andesite) + wall-mounted **Songmelyn**
+- Right-click GUI: playlist (with track duration + progress bar), play/stop, play mode (sequence / repeat one / shuffle), redstone toggle, per-block volume and range sliders
+- **Local mode** plays its own playlist, **Receive mode** listens to a channel (`350.000`–`350.999`)
+- **Broadcast Transmitter** sends music on a channel within 32–512 blocks (adjustable), with timer and redstone control
+- Independent volume via the vanilla **Records** sound slider
+- Requires Fabric Loader ≥ 0.20.1 + Fabric API, Java 21
+
+
+
 Minecraft **1.21.1** / Fabric 模组：伪装成石头的音响，可以播放自带或你自己导入的 ogg 音乐，
 支持红石触发、频道广播（512 格信号）、收音、进度同步。
 
@@ -8,6 +29,14 @@ Minecraft **1.21.1** / Fabric 模组：伪装成石头的音响，可以播放�
 模组 id：`explainstone`（为兼容存档保持不变）
 
 ---
+
+## 截图 / Screenshots
+
+| 六种讲解石 + 播放中的音符粒子 | 颂美铃（壁挂式教室广播音响） |
+|---|---|
+| ![variants](docs/screenshots/01-variants.jpg) | ![songmelyn](docs/screenshots/03-songmelyn-wall.jpg) |
+| **广播发信器（`>broadcasting_system` 屏幕）** | **单台讲解石在野外播放** |
+| ![transmitter](docs/screenshots/05-transmitter.jpg) | ![field](docs/screenshots/04-speaker-in-field.jpg) |
 
 ## 功能
 
