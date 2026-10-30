@@ -1,15 +1,18 @@
 # Explainstone and Songmelyn · 讲解石与颂美铃
 
+> 当前测试版本：**1.1.0-beta+1.21.1**（Fabric + NeoForge）
+
 [![build](https://github.com/3L96WW1/explainstone-and-songmelyn/actions/workflows/build.yml/badge.svg)](https://github.com/3L96WW1/explainstone-and-songmelyn/actions/workflows/build.yml)
 [![license](https://img.shields.io/badge/license-MPL--2.0-blue)](LICENSE)
 ![minecraft](https://img.shields.io/badge/Minecraft-1.21.1-green)
 ![fabric](https://img.shields.io/badge/Fabric-0.20.1%2B-orange)
+![neoforge](https://img.shields.io/badge/NeoForge-21.1.265%2B-orange)
 
 ![Explainstone and Songmelyn](docs/screenshots/02-variants-playing.jpg)
 
 ### English summary
 
-**Explainstone and Songmelyn** adds stone speakers to Minecraft 1.21.1 (Fabric) that play **Ogg Vorbis** music —
+**Explainstone and Songmelyn** adds stone speakers to Minecraft 1.21.1 (**Fabric + NeoForge**) that play **Ogg Vorbis** music —
 either imported by you (stored in the world, shared with other players) or streamed from a broadcast transmitter.
 
 - 6 Explainstone variants (rock / stone / cobblestone / granite / diorite / andesite) + wall-mounted **Songmelyn**
@@ -17,12 +20,15 @@ either imported by you (stored in the world, shared with other players) or strea
 - **Local mode** plays its own playlist, **Receive mode** listens to a channel (`350.000`–`350.999`)
 - **Broadcast Transmitter** sends music on a channel within 32–512 blocks (adjustable), with timer and redstone control
 - Independent volume via the vanilla **Records** sound slider
-- Requires Fabric Loader ≥ 0.20.1 + Fabric API, Java 21
+- Fabric: Loader ≥ 0.20.1 + Fabric API; NeoForge: 21.1.265+; Java 21
 
 
 
-Minecraft **1.21.1** / Fabric 模组：伪装成石头的音响，可以播放自带或你自己导入的 ogg 音乐，
+Minecraft **1.21.1** / **Fabric + NeoForge** 模组：伪装成石头的音响，可以播放自带或你自己导入的 ogg 音乐，
 支持红石触发、频道广播（512 格信号）、收音、进度同步。
+
+音频由 Minecraft 自带的 SoundEngine 流式播放，不再额外创建 OpenAL 设备；多人广播使用服务端时间轴同步，
+新增收信讲解石会从当前广播进度开始播放。
 
 作者：**GINKA_3L96WW1**
 
@@ -54,21 +60,34 @@ Minecraft **1.21.1** / Fabric 模组：伪装成石头的音响，可以播放�
 
 ## 下载 / Download
 
-**玩家**：到 [Releases](https://github.com/3L96WW1/explainstone-and-songmelyn/releases) 下载最新的
-`explainstone-and-songmelyn-*.jar`，和 [Fabric API](https://modrinth.com/mod/fabric-api) 一起丢进 `mods/` 即可（需要 Fabric Loader ≥ 0.20.1 + Java 21）。
+**玩家**：到 [Releases](https://github.com/3L96WW1/explainstone-and-songmelyn/releases) 下载对应平台的 jar：
+
+- `explainstone-fabric-1.21.1-*.jar` — Fabric，需要 Fabric Loader ≥ 0.20.1 + [Fabric API](https://modrinth.com/mod/fabric-api)
+- `explainstone-neoforge-1.21.1-*.jar` — NeoForge，需要 NeoForge 21.1.265+
+
+两个平台都需要 Java 21。**不要把两个 jar 同时放进同一个 `mods/` 目录。**
 
 **想自己构建**：
 
 ```bash
 git clone https://github.com/3L96WW1/explainstone-and-songmelyn.git
 cd explainstone-and-songmelyn
-./gradlew build      # 产物在 build/libs/
+./gradlew build
+# Fabric:   fabric/build/libs/
+# NeoForge: neoforge/build/libs/
 ```
 
 ## 安装
 
+### Fabric
+
 1. 安装 [Fabric Loader](https://fabricmc.net/use/) ≥ 0.20.1，Minecraft **1.21.1**，Java 21
-2. 把 [Fabric API](https://modrinth.com/mod/fabric-api) 和本模组的 jar 一起放进 `mods/`
+2. 把 [Fabric API](https://modrinth.com/mod/fabric-api) 和 `explainstone-fabric-1.21.1-*.jar` 一起放进 `mods/`
+
+### NeoForge
+
+1. 安装 NeoForge **21.1.265+**，Minecraft **1.21.1**，Java 21
+2. 把 `explainstone-neoforge-1.21.1-*.jar` 放进 `mods/`
 
 ## 使用
 
@@ -113,9 +132,17 @@ cd explainstone-and-songmelyn
 
 - 只支持 Minecraft **1.21.1**
 - 只支持 `.ogg`，不支持 mp3 / m4a / flac
-- 多人环境下"跨玩家"的进度基准是各自收到广播的时刻，会差一个网络延迟；**随机模式**各端独立随机
+- **随机模式**各端独立随机；顺序/单曲模式使用服务端广播时间轴同步
 - 播放列表存在方块实体里，**打掉方块配置会丢失**（用带 NBT 的搬运工具可以带走）
 - 剪贴板/文件选择框依赖 AWT，无图形环境时请用 `config/explainstone/inbox/` 方式导入
+- Fabric 和 NeoForge 是两套 jar，不能同时安装在同一个实例中
+
+## 技术说明
+
+- 共享逻辑位于 `common`，Fabric / NeoForge 适配分别位于 `fabric` / `neoforge`
+- 音频通过 Minecraft SoundEngine 的流式 `SoundInstance` 播放，OpenAL 设备由原版管理
+- Ogg 文件在后台解码/读取，不阻塞渲染线程
+- 广播包携带 session 与 elapsed，客户端会定期请求 Resync，新增收信方块可对齐当前进度
 
 ## 版权 / 许可
 
@@ -126,6 +153,8 @@ cd explainstone-and-songmelyn
 - 本项目与 Mojang / Microsoft 无关联。
 
 ## 开发
+
+项目按加载器拆分为 `common` / `fabric` / `neoforge` 三个模块。
 
 贴图与模型由脚本程序化生成，可重跑：
 
