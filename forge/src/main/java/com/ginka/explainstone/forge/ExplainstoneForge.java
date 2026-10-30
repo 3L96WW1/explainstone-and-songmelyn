@@ -1,9 +1,4 @@
-/*
- * This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at https://mozilla.org/MPL/2.0/.
- */
-package com.ginka.explainstone.neoforge;
+package com.ginka.explainstone.forge;
 
 import com.ginka.explainstone.Explainstone;
 import com.ginka.explainstone.ModBlocks;
@@ -14,20 +9,22 @@ import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntityType;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.fml.common.Mod;
-import net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent;
-import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
-import net.neoforged.neoforge.registries.RegisterEvent;
+import net.minecraftforge.event.BuildCreativeModeTabContentsEvent;
+import net.minecraftforge.eventbus.api.IEventBus;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
+import net.minecraftforge.registries.RegisterEvent;
 
 @Mod(Explainstone.MOD_ID)
-public final class ExplainstoneNeoForge {
-    public ExplainstoneNeoForge() {
-        Explainstone.init(new NeoForgePlatform(), new NeoForgeNetwork());
+public final class ExplainstoneForge {
+    public ExplainstoneForge() {
+        Explainstone.init(new ForgePlatform(), new ForgeNetwork());
+        IEventBus bus = FMLJavaModLoadingContext.get().getModEventBus();
+        ForgeNetwork.register(bus);
     }
 
-    @EventBusSubscriber(modid = Explainstone.MOD_ID, bus = EventBusSubscriber.Bus.MOD)
+    @Mod.EventBusSubscriber(modid = Explainstone.MOD_ID, bus = Mod.EventBusSubscriber.Bus.MOD)
     public static final class ModEvents {
         @SubscribeEvent
         public static void onRegister(RegisterEvent event) {
@@ -39,20 +36,15 @@ public final class ExplainstoneNeoForge {
                 ModBlocks.speakerBlockEntity = BlockEntityType.Builder.of(
                         SpeakerBlockEntity::new, ModBlocks.allBlocks().toArray(Block[]::new)).build(null);
                 event.register(Registries.BLOCK_ENTITY_TYPE,
-                        ResourceLocation.fromNamespaceAndPath(Explainstone.MOD_ID, "speaker_block"),
+                        new ResourceLocation(Explainstone.MOD_ID, "speaker_block"),
                         () -> ModBlocks.speakerBlockEntity);
             }
         }
 
         @SubscribeEvent
-        public static void onPayloads(RegisterPayloadHandlersEvent event) {
-            NeoForgeNetwork.register(event);
-        }
-
-        @SubscribeEvent
         public static void onCreativeTab(BuildCreativeModeTabContentsEvent event) {
-            if (event.getTabKey().equals(CreativeModeTabs.REDSTONE_BLOCKS)) {
-                ModBlocks.allBlocks().forEach(block -> event.accept(new ItemStack(block)));
+            if (event.getTabKey() == CreativeModeTabs.REDSTONE_BLOCKS) {
+                ModBlocks.addCreativeTabEntries(entry -> event.accept(new ItemStack(entry)));
             }
         }
     }

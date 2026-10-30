@@ -9,30 +9,38 @@ import com.ginka.explainstone.client.audio.SpeakerAudioCache;
 import com.ginka.explainstone.platform.Network;
 import com.ginka.explainstone.speaker.SpeakerPayloads;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
-import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
+import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
 
 public final class FabricClientNetwork implements Network {
     public static void register() {
-        ClientPlayNetworking.registerGlobalReceiver(SpeakerPayloads.AudioChunk.ID,
-                (payload, context) -> context.client().execute(() -> SpeakerAudioCache.onAudioChunk(payload)));
-        ClientPlayNetworking.registerGlobalReceiver(SpeakerPayloads.Broadcast.ID,
-                (payload, context) -> context.client().execute(() -> SpeakerAudioCache.onBroadcast(payload)));
+        ClientPlayNetworking.registerGlobalReceiver(SpeakerPayloads.Channel.AUDIO.id(),
+                (client, handler, buffer, sender) -> {
+                    SpeakerPayloads.AudioChunk payload = SpeakerPayloads.AudioChunk.read(buffer);
+                    client.execute(() -> SpeakerAudioCache.onAudioChunk(payload));
+                });
+        ClientPlayNetworking.registerGlobalReceiver(SpeakerPayloads.Channel.BROADCAST.id(),
+                (client, handler, buffer, sender) -> {
+                    SpeakerPayloads.Broadcast payload = SpeakerPayloads.Broadcast.read(buffer);
+                    client.execute(() -> SpeakerAudioCache.onBroadcast(payload));
+                });
     }
 
     @Override
-    public void sendToServer(CustomPacketPayload payload) {
-        ClientPlayNetworking.send(payload);
+    public void sendToServer(SpeakerPayloads.Packet payload) {
+        FriendlyByteBuf buffer = PacketByteBufs.create();
+        payload.write(buffer);
+        ClientPlayNetworking.send(payload.type().id(), buffer);
     }
 
     @Override
-    public boolean canSendToServer(CustomPacketPayload.Type<?> id) {
-        return ClientPlayNetworking.canSend(id);
+    public boolean canSendToServer(SpeakerPayloads.Channel channel) {
+        return ClientPlayNetworking.canSend(channel.id());
     }
 
     @Override
-    public void sendToPlayer(ServerPlayer player, CustomPacketPayload payload) {
-        // The global FabricNetwork handles server-bound sends; this should never be called.
+    public void sendToPlayer(ServerPlayer player, SpeakerPayloads.Packet payload) {
         throw new UnsupportedOperationException("Client facade cannot send to a server player");
     }
 }

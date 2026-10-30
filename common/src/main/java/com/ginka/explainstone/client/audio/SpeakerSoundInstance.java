@@ -13,7 +13,7 @@ import net.minecraft.client.resources.sounds.AbstractSoundInstance;
 import net.minecraft.client.resources.sounds.SoundInstance;
 import net.minecraft.client.resources.sounds.TickableSoundInstance;
 import net.minecraft.client.sounds.AudioStream;
-import net.minecraft.client.sounds.JOrbisAudioStream;
+import com.mojang.blaze3d.audio.OggAudioStream;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundSource;
@@ -30,7 +30,7 @@ import java.util.concurrent.CompletionException;
  * the platform's custom-stream hook to {@link #openStream()}.
  */
 public abstract class SpeakerSoundInstance extends AbstractSoundInstance implements TickableSoundInstance {
-    public static final ResourceLocation SOUND_ID = ResourceLocation.fromNamespaceAndPath("explainstone", "speaker_music");
+    public static final ResourceLocation SOUND_ID = new ResourceLocation("explainstone", "speaker_music");
 
     private final Track track;
     private final double startOffsetSeconds;
@@ -100,7 +100,7 @@ public abstract class SpeakerSoundInstance extends AbstractSoundInstance impleme
                 throw new CompletionException(new IOException("Missing audio: " + this.track.id()));
             }
             try {
-                AudioStream audio = new JOrbisAudioStream(stream);
+                AudioStream audio = new OggAudioStream(stream);
                 this.started = true;
                 if (this.startOffsetSeconds > 0.0 && audio.getFormat().getFrameSize() > 0) {
                     double offset = this.startOffsetSeconds;

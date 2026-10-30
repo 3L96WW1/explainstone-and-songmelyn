@@ -14,16 +14,9 @@ pluginManagement {
 				includeGroup('fabric-loom')
 			}
 		}
-		exclusiveContent {
-			forRepository {
-				maven {
-					name = 'NeoForge'
-					url = uri('https://maven.neoforged.net/releases')
-				}
-			}
-			filter {
-				includeGroupAndSubgroups('net.neoforged')
-			}
+		maven {
+			name = 'MinecraftForge'
+			url = uri('https://maven.minecraftforge.net/')
 		}
 	}
 }
@@ -35,4 +28,4 @@ plugins {
 rootProject.name = 'explainstone'
 include('common')
 include('fabric')
-include('neoforge')
+include('forge')

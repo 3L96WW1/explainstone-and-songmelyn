@@ -135,6 +135,6 @@ public final class AudioSources {
     }
 
     public static ResourceLocation builtinId(String name) {
-        return ResourceLocation.fromNamespaceAndPath("explainstone", name);
+        return new ResourceLocation("explainstone", name);
     }
 }

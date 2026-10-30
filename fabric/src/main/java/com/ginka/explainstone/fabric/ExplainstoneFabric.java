@@ -28,7 +28,7 @@ public final class ExplainstoneFabric implements ModInitializer {
         ModBlocks.speakerBlockEntity = FabricBlockEntityTypeBuilder.create(
                 SpeakerBlockEntity::new, ModBlocks.allBlocks().toArray(Block[]::new)).build();
         Registry.register(BuiltInRegistries.BLOCK_ENTITY_TYPE,
-                ResourceLocation.fromNamespaceAndPath(Explainstone.MOD_ID, "speaker_block"),
+                new ResourceLocation(Explainstone.MOD_ID, "speaker_block"),
                 ModBlocks.speakerBlockEntity);
 
         FabricNetwork.registerServer();

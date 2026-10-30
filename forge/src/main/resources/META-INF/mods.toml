@@ -1,0 +1,26 @@
+modLoader = "javafml"
+loaderVersion = "[47,)"
+license = "MPL-2.0"
+
+[[mods]]
+modId = "explainstone"
+version = "${version}"
+displayName = "Explainstone and Songmelyn"
+description = '''Stone speakers that play imported or broadcast Ogg music.'''
+logoFile = "assets/explainstone/icon.png"
+authors = "GINKA_3L96WW1"
+credits = "GINKA_3L96WW1"
+
+[[dependencies.explainstone]]
+modId = "forge"
+mandatory = true
+versionRange = "[47,)"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies.explainstone]]
+modId = "minecraft"
+mandatory = true
+versionRange = "${minecraft_version_range}"
+ordering = "NONE"
+side = "BOTH"

@@ -11,7 +11,6 @@ package com.ginka.explainstone.speaker;
 
 import com.ginka.explainstone.ModBlocks;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
@@ -208,8 +207,8 @@ public class SpeakerBlockEntity extends BlockEntity {
     }
 
     @Override
-    protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
-        super.saveAdditional(tag, registries);
+    public void saveAdditional(CompoundTag tag) {
+        super.saveAdditional(tag);
         ListTag list = new ListTag();
         for (Track track : this.tracks) {
             list.add(track.toNbt());
@@ -229,8 +228,8 @@ public class SpeakerBlockEntity extends BlockEntity {
     }
 
     @Override
-    protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
-        super.loadAdditional(tag, registries);
+    public void load(CompoundTag tag) {
+        super.load(tag);
         this.tracks.clear();
         ListTag list = tag.getList("tracks", Tag.TAG_COMPOUND);
         for (int i = 0; i < list.size(); i++) {
@@ -284,8 +283,8 @@ public class SpeakerBlockEntity extends BlockEntity {
     }
 
     @Override
-    public CompoundTag getUpdateTag(HolderLookup.Provider registries) {
-        return this.saveWithFullMetadata(registries);
+    public CompoundTag getUpdateTag() {
+        return this.saveWithFullMetadata();
     }
 
     @Override

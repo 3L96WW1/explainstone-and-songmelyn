@@ -436,7 +436,7 @@ public class SpeakerScreen extends Screen {
     }
 
     private void send(int action, int value) {
-        if (Explainstone.network().canSendToServer(SpeakerPayloads.Action.ID)) {
+        if (Explainstone.network().canSendToServer(SpeakerPayloads.Channel.ACTION)) {
             Explainstone.network().sendToServer(new SpeakerPayloads.Action(this.pos, action, value));
         }
     }
@@ -444,7 +444,7 @@ public class SpeakerScreen extends Screen {
     // ---------------------------------------------------------------- 渲染 喵
     @Override
     public void render(GuiGraphics context, int mouseX, int mouseY, float delta) {
-        this.renderBackground(context, mouseX, mouseY, delta);
+        this.renderBackground(context);
         super.render(context, mouseX, mouseY, delta);
 
         SpeakerBlockEntity be = this.speaker();
@@ -553,7 +553,7 @@ public class SpeakerScreen extends Screen {
     }
 
     @Override
-    public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
+    public boolean mouseScrolled(double mouseX, double mouseY, double verticalAmount) {
         SpeakerBlockEntity be = this.speaker();
         int maxScroll = be == null ? 0 : Math.max(0, be.getTracks().size() - this.listRows);
         this.scroll = Math.max(0, Math.min(maxScroll, this.scroll - (int) Math.signum(verticalAmount)));

@@ -1,8 +1,6 @@
 /*
  * explainstone —— 讲解石 / 颂美铃 / 广播发信器
  *
- * 作者 / Author : GINKA_3L96WW1
- *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
@@ -10,13 +8,10 @@
 package com.ginka.explainstone.speaker;
 
 import net.minecraft.core.BlockPos;
-import net.minecraft.network.RegistryFriendlyByteBuf;
-import net.minecraft.network.codec.ByteBufCodecs;
-import net.minecraft.network.codec.StreamCodec;
-import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 
-/** 讲解石界面的所有自定义网络包。 */
+/** Packet payloads shared by Fabric and Forge on 1.20.1. */
 public final class SpeakerPayloads {
     public static final int ACTION_PLAY = 0;
     public static final int ACTION_STOP = 1;
@@ -35,112 +30,149 @@ public final class SpeakerPayloads {
 
     public static final int CHUNK_SIZE = 8000;
 
+    public enum Channel {
+        ACTION("speaker_action"),
+        IMPORT("speaker_import"),
+        REQUEST("speaker_request"),
+        RESYNC("speaker_resync"),
+        AUDIO("speaker_audio"),
+        BROADCAST("speaker_broadcast");
+
+        private final ResourceLocation id;
+
+        Channel(String path) {
+            this.id = new ResourceLocation("explainstone", path);
+        }
+
+        public ResourceLocation id() {
+            return this.id;
+        }
+    }
+
+    public interface Packet {
+        Channel type();
+
+        void write(FriendlyByteBuf buffer);
+    }
+
     private SpeakerPayloads() {
     }
 
-    public record Action(BlockPos pos, int action, int value) implements CustomPacketPayload {
-        public static final CustomPacketPayload.Type<Action> ID = new CustomPacketPayload.Type<>(
-                ResourceLocation.fromNamespaceAndPath("explainstone", "speaker_action"));
-        public static final StreamCodec<RegistryFriendlyByteBuf, Action> CODEC = StreamCodec.composite(
-                BlockPos.STREAM_CODEC, Action::pos,
-                ByteBufCodecs.VAR_INT, Action::action,
-                ByteBufCodecs.VAR_INT, Action::value,
-                Action::new);
+    public record Action(BlockPos pos, int action, int value) implements Packet {
+        @Override
+        public Channel type() {
+            return Channel.ACTION;
+        }
 
         @Override
-        public CustomPacketPayload.Type<? extends CustomPacketPayload> type() {
-            return ID;
+        public void write(FriendlyByteBuf buffer) {
+            buffer.writeBlockPos(this.pos);
+            buffer.writeVarInt(this.action);
+            buffer.writeVarInt(this.value);
+        }
+
+        public static Action read(FriendlyByteBuf buffer) {
+            return new Action(buffer.readBlockPos(), buffer.readVarInt(), buffer.readVarInt());
         }
     }
 
     public record ImportChunk(BlockPos pos, String label, String sha1, int index, int total, byte[] data)
-            implements CustomPacketPayload {
-        public static final CustomPacketPayload.Type<ImportChunk> ID = new CustomPacketPayload.Type<>(
-                ResourceLocation.fromNamespaceAndPath("explainstone", "speaker_import"));
-        public static final StreamCodec<RegistryFriendlyByteBuf, ImportChunk> CODEC = StreamCodec.composite(
-                BlockPos.STREAM_CODEC, ImportChunk::pos,
-                ByteBufCodecs.STRING_UTF8, ImportChunk::label,
-                ByteBufCodecs.STRING_UTF8, ImportChunk::sha1,
-                ByteBufCodecs.VAR_INT, ImportChunk::index,
-                ByteBufCodecs.VAR_INT, ImportChunk::total,
-                ByteBufCodecs.BYTE_ARRAY, ImportChunk::data,
-                ImportChunk::new);
+            implements Packet {
+        @Override
+        public Channel type() {
+            return Channel.IMPORT;
+        }
 
         @Override
-        public CustomPacketPayload.Type<? extends CustomPacketPayload> type() {
-            return ID;
+        public void write(FriendlyByteBuf buffer) {
+            buffer.writeBlockPos(this.pos);
+            buffer.writeUtf(this.label);
+            buffer.writeUtf(this.sha1);
+            buffer.writeVarInt(this.index);
+            buffer.writeVarInt(this.total);
+            buffer.writeByteArray(this.data);
+        }
+
+        public static ImportChunk read(FriendlyByteBuf buffer) {
+            return new ImportChunk(buffer.readBlockPos(), buffer.readUtf(), buffer.readUtf(),
+                    buffer.readVarInt(), buffer.readVarInt(), buffer.readByteArray());
         }
     }
 
-    public record RequestAudio(String sha1) implements CustomPacketPayload {
-        public static final CustomPacketPayload.Type<RequestAudio> ID = new CustomPacketPayload.Type<>(
-                ResourceLocation.fromNamespaceAndPath("explainstone", "speaker_request"));
-        public static final StreamCodec<RegistryFriendlyByteBuf, RequestAudio> CODEC = StreamCodec.composite(
-                ByteBufCodecs.STRING_UTF8, RequestAudio::sha1,
-                RequestAudio::new);
+    public record RequestAudio(String sha1) implements Packet {
+        @Override
+        public Channel type() {
+            return Channel.REQUEST;
+        }
 
         @Override
-        public CustomPacketPayload.Type<? extends CustomPacketPayload> type() {
-            return ID;
+        public void write(FriendlyByteBuf buffer) {
+            buffer.writeUtf(this.sha1);
+        }
+
+        public static RequestAudio read(FriendlyByteBuf buffer) {
+            return new RequestAudio(buffer.readUtf());
         }
     }
 
-    public record Resync() implements CustomPacketPayload {
-        public static final CustomPacketPayload.Type<Resync> ID = new CustomPacketPayload.Type<>(
-                ResourceLocation.fromNamespaceAndPath("explainstone", "speaker_resync"));
-        public static final StreamCodec<RegistryFriendlyByteBuf, Resync> CODEC = StreamCodec.unit(new Resync());
+    public record Resync() implements Packet {
+        @Override
+        public Channel type() {
+            return Channel.RESYNC;
+        }
 
         @Override
-        public CustomPacketPayload.Type<? extends CustomPacketPayload> type() {
-            return ID;
+        public void write(FriendlyByteBuf buffer) {
+        }
+
+        public static Resync read(FriendlyByteBuf buffer) {
+            return new Resync();
         }
     }
 
     public record Broadcast(int channel, int mode, int index, boolean active, String tracks,
-                            long session, int elapsedSeconds)
-            implements CustomPacketPayload {
-        public static final CustomPacketPayload.Type<Broadcast> ID = new CustomPacketPayload.Type<>(
-                ResourceLocation.fromNamespaceAndPath("explainstone", "speaker_broadcast"));
-        public static final StreamCodec<RegistryFriendlyByteBuf, Broadcast> CODEC = StreamCodec.of(
-                (buffer, value) -> {
-                    buffer.writeVarInt(value.channel());
-                    buffer.writeVarInt(value.mode());
-                    buffer.writeVarInt(value.index());
-                    buffer.writeBoolean(value.active());
-                    buffer.writeUtf(value.tracks());
-                    buffer.writeLong(value.session());
-                    buffer.writeVarInt(value.elapsedSeconds());
-                },
-                buffer -> new Broadcast(
-                        buffer.readVarInt(),
-                        buffer.readVarInt(),
-                        buffer.readVarInt(),
-                        buffer.readBoolean(),
-                        buffer.readUtf(),
-                        buffer.readLong(),
-                        buffer.readVarInt()));
+                            long session, int elapsedSeconds) implements Packet {
+        @Override
+        public Channel type() {
+            return Channel.BROADCAST;
+        }
 
         @Override
-        public CustomPacketPayload.Type<? extends CustomPacketPayload> type() {
-            return ID;
+        public void write(FriendlyByteBuf buffer) {
+            buffer.writeVarInt(this.channel);
+            buffer.writeVarInt(this.mode);
+            buffer.writeVarInt(this.index);
+            buffer.writeBoolean(this.active);
+            buffer.writeUtf(this.tracks);
+            buffer.writeLong(this.session);
+            buffer.writeVarInt(this.elapsedSeconds);
+        }
+
+        public static Broadcast read(FriendlyByteBuf buffer) {
+            return new Broadcast(buffer.readVarInt(), buffer.readVarInt(), buffer.readVarInt(),
+                    buffer.readBoolean(), buffer.readUtf(), buffer.readLong(), buffer.readVarInt());
         }
     }
 
     public record AudioChunk(String sha1, String label, int index, int total, byte[] data)
-            implements CustomPacketPayload {
-        public static final CustomPacketPayload.Type<AudioChunk> ID = new CustomPacketPayload.Type<>(
-                ResourceLocation.fromNamespaceAndPath("explainstone", "speaker_audio"));
-        public static final StreamCodec<RegistryFriendlyByteBuf, AudioChunk> CODEC = StreamCodec.composite(
-                ByteBufCodecs.STRING_UTF8, AudioChunk::sha1,
-                ByteBufCodecs.STRING_UTF8, AudioChunk::label,
-                ByteBufCodecs.VAR_INT, AudioChunk::index,
-                ByteBufCodecs.VAR_INT, AudioChunk::total,
-                ByteBufCodecs.BYTE_ARRAY, AudioChunk::data,
-                AudioChunk::new);
+            implements Packet {
+        @Override
+        public Channel type() {
+            return Channel.AUDIO;
+        }
 
         @Override
-        public CustomPacketPayload.Type<? extends CustomPacketPayload> type() {
-            return ID;
+        public void write(FriendlyByteBuf buffer) {
+            buffer.writeUtf(this.sha1);
+            buffer.writeUtf(this.label);
+            buffer.writeVarInt(this.index);
+            buffer.writeVarInt(this.total);
+            buffer.writeByteArray(this.data);
+        }
+
+        public static AudioChunk read(FriendlyByteBuf buffer) {
+            return new AudioChunk(buffer.readUtf(), buffer.readUtf(), buffer.readVarInt(),
+                    buffer.readVarInt(), buffer.readByteArray());
         }
     }
 }

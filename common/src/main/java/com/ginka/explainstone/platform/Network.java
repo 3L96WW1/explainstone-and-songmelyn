@@ -5,14 +5,14 @@
  */
 package com.ginka.explainstone.platform;
 
-import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import com.ginka.explainstone.speaker.SpeakerPayloads;
 import net.minecraft.server.level.ServerPlayer;
 
 /** Loader-neutral packet sending. Registration stays in the loader modules. */
 public interface Network {
-    void sendToServer(CustomPacketPayload payload);
+    void sendToServer(SpeakerPayloads.Packet payload);
 
-    boolean canSendToServer(CustomPacketPayload.Type<?> id);
+    boolean canSendToServer(SpeakerPayloads.Channel channel);
 
-    void sendToPlayer(ServerPlayer player, CustomPacketPayload payload);
+    void sendToPlayer(ServerPlayer player, SpeakerPayloads.Packet payload);
 }

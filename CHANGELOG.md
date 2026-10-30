@@ -1,72 +1,30 @@
 # Changelog
 
-## 1.1.0-beta+1.21 — Minecraft 1.21–1.21.1 / 多加载器与音频重构
+## 1.1.0-beta+1.20.1 — Minecraft 1.20.1 / Fabric + Forge
 
 ### 重构
-- 项目拆分为 `common` / `fabric` / `neoforge` 三个模块，共享逻辑不再依赖单一加载器
-- 新增 **NeoForge 21.0.167+ / 21.1.265+** 支持；Fabric 支持 Loader ≥ 0.16.5
+- 项目拆分为 `common` / `fabric` / `forge` 三个模块，共享逻辑不再依赖单一加载器
+- 新增 **Forge 47.4.28+** 支持；Fabric 支持 Loader ≥ 0.16.9
 - 音频改为 Minecraft SoundEngine 流式 `SoundInstance` 播放：
   - 不再创建第二套 OpenAL device/context
   - Ogg 在后台流式读取，不再整首解码成 PCM
-  - 不再需要手动切换/恢复 OpenAL context
-- 删除旧的自建 OpenAL 音频引擎、`OggDecoder` 和整段 PCM 缓存路径
+  - 1.20.1 使用 `OggAudioStream` / `FabricSoundInstance`
+- 网络层按 1.20.1 API 重写：
+  - Fabric 使用 `PacketByteBuf` + `ServerPlayNetworking`
+  - Forge 使用 `SimpleChannel` + `FriendlyByteBuf`
+  - 使用 1.20.1 的旧网络 API，不使用 `StreamCodec` / `CustomPacketPayload`
 
 ### 同步与播放
-- 本地多台讲解石播放同一首曲目时，恢复公共 `TRACK_START` 时间轴
-- 顺序/单曲模式切歌、循环时继续按公共时间轴对齐
-- 广播包增加 `session` 与 `elapsedSeconds`：
-  - 新加入的收信讲解石从当前广播进度开始
-  - 客户端定期检查活跃广播并请求 Resync
+- 本地多台讲解石播放同一首曲目时，保持公共时间轴
+- 广播包包含 `session` 与 `elapsedSeconds`，新加入的收信讲解石从当前广播进度开始
 - 收信进度、本地进度与暂停/恢复后的时间轴统一
-- 收到重复音频分块时，不再打断已经成功启动的播放实例
-
-### 修复
-- 修复 Fabric 集成服务器中 `Client cannot send to a server player directly` 导致的崩溃
-- 修复换频道/停止播放时旧频道收信端不停播的问题
-- 修复收信讲解石缺少进度同步的问题
 
 ### 性能
 - 渲染线程不再执行 OpenAL 调用和整首音频解码
 - 降低音频线程阻塞和 OpenAL 设备竞争导致的卡顿
-- 实测播放更流畅，CPU/内存占用明显下降
+- 播放更流畅，CPU/内存占用明显下降
 
 ### 兼容性
 - 方块 id、存档中的 block entity 数据保持兼容
-- 同一套构建覆盖 Minecraft 1.21 / 1.21.1（Fabric 与 NeoForge）
-- Fabric 与 NeoForge 是两个独立 jar，不能放进同一个实例的 `mods/`
-- 仍只支持 Minecraft **1.21.1** 和 Ogg Vorbis
-
----
-
-## 1.0.1-beta+1.21.1
-
-### 修复
-- **生存模式破坏方块不再掉落物品** —— 之前没有掉落表（loot table），现在 8 个方块都会正常掉落自身
-- 挖掘手感（硬度 1.05）：**木镐约 0.8 秒**、石镐约 0.4 秒、空手约 1.6 秒；不需要任何工具即可挖下并掉落
-
-## 1.0.0-beta+1.21.1 — 首个测试版 / First beta
-
-> 模组显示名：**Explainstone and Songmelyn**（讲解石与颂美铃），内部 id 仍为 `explainstone`。
-
-### 方块
-- 讲解石：6 种外壳（灰色岩石 / 石头 / 圆石 / 花岗岩 / 闪长岩 / 安山岩）
-- 颂美铃：壁挂式教室广播音响外观，薄板碰撞箱与选中框
-- 广播发信器：黑灰外壳 + 12 条黑色棱边 + `>broadcasting_system` 屏幕
-
-### 功能
-- 右键打开界面：播放列表、播放/停止、播放模式（顺序 / 单曲 / 随机）
-- 自播放 / 收信两种模式，频道 `350.000`~`350.999`
-- 广播信号范围可调 32~512 格；讲解石播放距离可调 8~48 格
-- 每个方块独立音量 0~100%（叠加 MC「唱片机」分类音量）
-- 定时播放（关 / 1 / 3 / 10 分）与红石开关（收信模式忽略红石）
-- 播放列表显示曲目时长，播放时显示进度条与时间
-- 导入 ogg（存进存档、多人共享、缺失自动下载），单文件 ≤6MB、≤10 分钟
-- 多台音响按公共时间轴对齐进度，循环/换曲后仍同步
-
-### 技术
-- 自建 OpenAL 播放引擎（支持任意导入的 ogg，不受资源包限制）
-- 服务端推送广播状态（`speaker_broadcast`），客户端缺失时自动请求重推
-- 内存与安全上限：最多 3 个并发音源、导入 6MB / 10 分钟
-
-### 许可
-- 代码 MPL-2.0；素材保留所有权利（随模组分发）
+- 支持 Minecraft **1.20.1**（Fabric + Forge）
+- Fabric 与 Forge 是两个独立 jar，不能放进同一个实例的 `mods/`

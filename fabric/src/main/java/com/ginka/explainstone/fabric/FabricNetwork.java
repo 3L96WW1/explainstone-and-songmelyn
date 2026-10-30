@@ -8,10 +8,10 @@ package com.ginka.explainstone.fabric;
 import com.ginka.explainstone.platform.Network;
 import com.ginka.explainstone.speaker.SpeakerNetworking;
 import com.ginka.explainstone.speaker.SpeakerPayloads;
-import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
+import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
-import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
 
 public final class FabricNetwork implements Network {
@@ -22,31 +22,32 @@ public final class FabricNetwork implements Network {
     }
 
     public static void registerServer() {
-        PayloadTypeRegistry.playC2S().register(SpeakerPayloads.Action.ID, SpeakerPayloads.Action.CODEC);
-        PayloadTypeRegistry.playC2S().register(SpeakerPayloads.ImportChunk.ID, SpeakerPayloads.ImportChunk.CODEC);
-        PayloadTypeRegistry.playC2S().register(SpeakerPayloads.RequestAudio.ID, SpeakerPayloads.RequestAudio.CODEC);
-        PayloadTypeRegistry.playC2S().register(SpeakerPayloads.Resync.ID, SpeakerPayloads.Resync.CODEC);
-        PayloadTypeRegistry.playS2C().register(SpeakerPayloads.AudioChunk.ID, SpeakerPayloads.AudioChunk.CODEC);
-        PayloadTypeRegistry.playS2C().register(SpeakerPayloads.Broadcast.ID, SpeakerPayloads.Broadcast.CODEC);
-
-        ServerPlayNetworking.registerGlobalReceiver(SpeakerPayloads.Action.ID,
-                (payload, context) -> context.server().execute(() ->
-                        SpeakerNetworking.handleAction(context.player(), payload)));
-        ServerPlayNetworking.registerGlobalReceiver(SpeakerPayloads.ImportChunk.ID,
-                (payload, context) -> context.server().execute(() ->
-                        SpeakerNetworking.handleImport(context.player(), payload)));
-        ServerPlayNetworking.registerGlobalReceiver(SpeakerPayloads.RequestAudio.ID,
-                (payload, context) -> context.server().execute(() ->
-                        SpeakerNetworking.handleRequest(context.player(), payload)));
-        ServerPlayNetworking.registerGlobalReceiver(SpeakerPayloads.Resync.ID,
-                (payload, context) -> context.server().execute(() ->
-                        SpeakerNetworking.onJoin(context.player())));
+        ServerPlayNetworking.registerGlobalReceiver(SpeakerPayloads.Channel.ACTION.id(),
+                (server, player, handler, buffer, sender) -> {
+                    SpeakerPayloads.Action payload = SpeakerPayloads.Action.read(buffer);
+                    server.execute(() -> SpeakerNetworking.handleAction(player, payload));
+                });
+        ServerPlayNetworking.registerGlobalReceiver(SpeakerPayloads.Channel.IMPORT.id(),
+                (server, player, handler, buffer, sender) -> {
+                    SpeakerPayloads.ImportChunk payload = SpeakerPayloads.ImportChunk.read(buffer);
+                    server.execute(() -> SpeakerNetworking.handleImport(player, payload));
+                });
+        ServerPlayNetworking.registerGlobalReceiver(SpeakerPayloads.Channel.REQUEST.id(),
+                (server, player, handler, buffer, sender) -> {
+                    SpeakerPayloads.RequestAudio payload = SpeakerPayloads.RequestAudio.read(buffer);
+                    server.execute(() -> SpeakerNetworking.handleRequest(player, payload));
+                });
+        ServerPlayNetworking.registerGlobalReceiver(SpeakerPayloads.Channel.RESYNC.id(),
+                (server, player, handler, buffer, sender) -> {
+                    SpeakerPayloads.Resync.read(buffer);
+                    server.execute(() -> SpeakerNetworking.onJoin(player));
+                });
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) ->
                 server.execute(() -> SpeakerNetworking.onJoin(handler.getPlayer())));
     }
 
     @Override
-    public void sendToServer(CustomPacketPayload payload) {
+    public void sendToServer(SpeakerPayloads.Packet payload) {
         if (clientDelegate == null) {
             throw new UnsupportedOperationException("Client networking is not available on this side");
         }
@@ -54,12 +55,14 @@ public final class FabricNetwork implements Network {
     }
 
     @Override
-    public boolean canSendToServer(CustomPacketPayload.Type<?> id) {
-        return clientDelegate != null && clientDelegate.canSendToServer(id);
+    public boolean canSendToServer(SpeakerPayloads.Channel channel) {
+        return clientDelegate != null && clientDelegate.canSendToServer(channel);
     }
 
     @Override
-    public void sendToPlayer(ServerPlayer player, CustomPacketPayload payload) {
-        ServerPlayNetworking.send(player, payload);
+    public void sendToPlayer(ServerPlayer player, SpeakerPayloads.Packet payload) {
+        FriendlyByteBuf buffer = PacketByteBufs.create();
+        payload.write(buffer);
+        ServerPlayNetworking.send(player, payload.type().id(), buffer);
     }
 }

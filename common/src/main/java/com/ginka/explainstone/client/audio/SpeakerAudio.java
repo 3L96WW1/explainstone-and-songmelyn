@@ -223,7 +223,7 @@ public final class SpeakerAudio {
             for (BlockPos pos : speakers) {
                 if (world.getBlockEntity(pos) instanceof SpeakerBlockEntity be
                         && be.isReceiveMode()
-                        && Explainstone.network().canSendToServer(SpeakerPayloads.Resync.ID)) {
+                        && Explainstone.network().canSendToServer(SpeakerPayloads.Channel.RESYNC)) {
                     BroadcastInfo info = BROADCASTS.get(be.getChannel());
                     if (info == null || clock - info.receivedClock() > 120L) {
                         Explainstone.network().sendToServer(new SpeakerPayloads.Resync());
@@ -350,7 +350,7 @@ public final class SpeakerAudio {
         if (!REQUESTED.add(sha1)) {
             return;
         }
-        if (Explainstone.network().canSendToServer(SpeakerPayloads.RequestAudio.ID)) {
+        if (Explainstone.network().canSendToServer(SpeakerPayloads.Channel.REQUEST)) {
             Explainstone.network().sendToServer(new SpeakerPayloads.RequestAudio(sha1));
         }
     }

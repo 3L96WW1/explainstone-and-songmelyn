@@ -1,0 +1,28 @@
+plugins {
+	id 'multiloader-loader'
+	id 'net.minecraftforge.gradle' version '[6.0,6.2)'
+}
+
+minecraft {
+	mappings channel: 'official', version: minecraft_version
+	copyIdeResources = true
+	runs {
+		client {
+			workingDirectory project.file('run')
+			mods { "${mod_id}" { source sourceSets.main } }
+		}
+		server {
+			workingDirectory project.file('run')
+			mods { "${mod_id}" { source sourceSets.main } }
+		}
+	}
+}
+
+dependencies {
+	minecraft "net.minecraftforge:forge:${forge_version}"
+}
+
+tasks.withType(JavaCompile).configureEach {
+	options.encoding = 'UTF-8'
+	options.release = java_version as int
+}

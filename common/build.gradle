@@ -1,10 +1,14 @@
 plugins {
 	id 'multiloader-common'
-	id 'net.neoforged.moddev'
+	id 'net.minecraftforge.gradle' version '[6.0,6.2)'
 }
 
-neoForge {
-	neoFormVersion = neo_form_version
+minecraft {
+	mappings channel: 'official', version: minecraft_version
+}
+
+dependencies {
+	minecraft "net.minecraftforge:forge:${forge_version}"
 }
 
 configurations {
@@ -21,7 +25,4 @@ configurations {
 artifacts {
 	commonJava sourceSets.main.java.sourceDirectories.singleFile
 	commonResources sourceSets.main.resources.sourceDirectories.singleFile
-}
-
-dependencies {
 }

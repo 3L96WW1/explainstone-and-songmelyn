@@ -90,6 +90,6 @@ public final class ModBlocks {
     }
 
     private static ResourceLocation id(String path) {
-        return ResourceLocation.fromNamespaceAndPath(Explainstone.MOD_ID, path);
+        return new ResourceLocation(Explainstone.MOD_ID, path);
     }
 }
