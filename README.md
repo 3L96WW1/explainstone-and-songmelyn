@@ -1,18 +1,18 @@
 # Explainstone and Songmelyn · 讲解石与颂美铃
 
-> 当前测试版本：**1.1.0-beta+1.21.1**（Fabric + NeoForge）
+> 当前测试版本：**1.1.0-beta+1.21**（Minecraft 1.21–1.21.1，Fabric + NeoForge）
 
 [![build](https://github.com/3L96WW1/explainstone-and-songmelyn/actions/workflows/build.yml/badge.svg)](https://github.com/3L96WW1/explainstone-and-songmelyn/actions/workflows/build.yml)
 [![license](https://img.shields.io/badge/license-MPL--2.0-blue)](LICENSE)
-![minecraft](https://img.shields.io/badge/Minecraft-1.21.1-green)
-![fabric](https://img.shields.io/badge/Fabric-0.20.1%2B-orange)
-![neoforge](https://img.shields.io/badge/NeoForge-21.1.265%2B-orange)
+![minecraft](https://img.shields.io/badge/Minecraft-1.21--1.21.1-green)
+![fabric](https://img.shields.io/badge/Fabric-0.16.5%2B-orange)
+![neoforge](https://img.shields.io/badge/NeoForge-21.0.167%2B-orange)
 
 ![Explainstone and Songmelyn](docs/screenshots/02-variants-playing.jpg)
 
 ### English summary
 
-**Explainstone and Songmelyn** adds stone speakers to Minecraft 1.21.1 (**Fabric + NeoForge**) that play **Ogg Vorbis** music —
+**Explainstone and Songmelyn** adds stone speakers to Minecraft 1.21–1.21.1 (**Fabric + NeoForge**) that play **Ogg Vorbis** music —
 either imported by you (stored in the world, shared with other players) or streamed from a broadcast transmitter.
 
 - 6 Explainstone variants (rock / stone / cobblestone / granite / diorite / andesite) + wall-mounted **Songmelyn**
@@ -20,11 +20,11 @@ either imported by you (stored in the world, shared with other players) or strea
 - **Local mode** plays its own playlist, **Receive mode** listens to a channel (`350.000`–`350.999`)
 - **Broadcast Transmitter** sends music on a channel within 32–512 blocks (adjustable), with timer and redstone control
 - Independent volume via the vanilla **Records** sound slider
-- Fabric: Loader ≥ 0.20.1 + Fabric API; NeoForge: 21.1.265+; Java 21
+- Fabric: Loader ≥ 0.16.5 + Fabric API; NeoForge: 21.0.167+ / 21.1.265+; Java 21
 
 
 
-Minecraft **1.21.1** / **Fabric + NeoForge** 模组：伪装成石头的音响，可以播放自带或你自己导入的 ogg 音乐，
+Minecraft **1.21–1.21.1** / **Fabric + NeoForge** 模组：伪装成石头的音响，可以播放自带或你自己导入的 ogg 音乐，
 支持红石触发、频道广播（512 格信号）、收音、进度同步。
 
 音频由 Minecraft 自带的 SoundEngine 流式播放，不再额外创建 OpenAL 设备；多人广播使用服务端时间轴同步，
@@ -62,8 +62,8 @@ Minecraft **1.21.1** / **Fabric + NeoForge** 模组：伪装成石头的音响�
 
 **玩家**：到 [Releases](https://github.com/3L96WW1/explainstone-and-songmelyn/releases) 下载对应平台的 jar：
 
-- `explainstone-fabric-1.21.1-*.jar` — Fabric，需要 Fabric Loader ≥ 0.20.1 + [Fabric API](https://modrinth.com/mod/fabric-api)
-- `explainstone-neoforge-1.21.1-*.jar` — NeoForge，需要 NeoForge 21.1.265+
+- `explainstone-fabric-1.21-*.jar` — Fabric，支持 Minecraft 1.21–1.21.1，需要 Fabric Loader ≥ 0.16.5 + [Fabric API](https://modrinth.com/mod/fabric-api)
+- `explainstone-neoforge-1.21-*.jar` — NeoForge，支持 Minecraft 1.21–1.21.1，需要 NeoForge 21.0.167+（1.21）或 21.1.265+（1.21.1）
 
 两个平台都需要 Java 21。**不要把两个 jar 同时放进同一个 `mods/` 目录。**
 
@@ -81,13 +81,13 @@ cd explainstone-and-songmelyn
 
 ### Fabric
 
-1. 安装 [Fabric Loader](https://fabricmc.net/use/) ≥ 0.20.1，Minecraft **1.21.1**，Java 21
-2. 把 [Fabric API](https://modrinth.com/mod/fabric-api) 和 `explainstone-fabric-1.21.1-*.jar` 一起放进 `mods/`
+1. 安装 [Fabric Loader](https://fabricmc.net/use/) ≥ 0.16.5，Minecraft **1.21 或 1.21.1**，Java 21
+2. 把对应 Minecraft 版本的 [Fabric API](https://modrinth.com/mod/fabric-api) 和 `explainstone-fabric-1.21-*.jar` 一起放进 `mods/`
 
 ### NeoForge
 
-1. 安装 NeoForge **21.1.265+**，Minecraft **1.21.1**，Java 21
-2. 把 `explainstone-neoforge-1.21.1-*.jar` 放进 `mods/`
+1. 安装 NeoForge **21.0.167+**（Minecraft 1.21）或 **21.1.265+**（Minecraft 1.21.1），Java 21
+2. 把 `explainstone-neoforge-1.21-*.jar` 放进 `mods/`
 
 ## 使用
 
@@ -130,7 +130,7 @@ cd explainstone-and-songmelyn
 
 ## 已知限制
 
-- 只支持 Minecraft **1.21.1**
+- 支持 Minecraft **1.21–1.21.1**
 - 只支持 `.ogg`，不支持 mp3 / m4a / flac
 - **随机模式**各端独立随机；顺序/单曲模式使用服务端广播时间轴同步
 - 播放列表存在方块实体里，**打掉方块配置会丢失**（用带 NBT 的搬运工具可以带走）

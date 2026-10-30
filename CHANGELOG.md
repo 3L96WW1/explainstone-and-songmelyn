@@ -1,10 +1,10 @@
 # Changelog
 
-## 1.1.0-beta+1.21.1 — 多加载器与音频重构
+## 1.1.0-beta+1.21 — Minecraft 1.21–1.21.1 / 多加载器与音频重构
 
 ### 重构
 - 项目拆分为 `common` / `fabric` / `neoforge` 三个模块，共享逻辑不再依赖单一加载器
-- 新增 **NeoForge 21.1.265+** 支持；Fabric 继续支持 Loader ≥ 0.20.1
+- 新增 **NeoForge 21.0.167+ / 21.1.265+** 支持；Fabric 支持 Loader ≥ 0.16.5
 - 音频改为 Minecraft SoundEngine 流式 `SoundInstance` 播放：
   - 不再创建第二套 OpenAL device/context
   - Ogg 在后台流式读取，不再整首解码成 PCM
@@ -32,6 +32,7 @@
 
 ### 兼容性
 - 方块 id、存档中的 block entity 数据保持兼容
+- 同一套构建覆盖 Minecraft 1.21 / 1.21.1（Fabric 与 NeoForge）
 - Fabric 与 NeoForge 是两个独立 jar，不能放进同一个实例的 `mods/`
 - 仍只支持 Minecraft **1.21.1** 和 Ogg Vorbis
 

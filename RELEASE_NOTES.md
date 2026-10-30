@@ -1,9 +1,9 @@
-## Explainstone and Songmelyn 1.1.0-beta+1.21.1
+## Explainstone and Songmelyn 1.1.0-beta+1.21
 
-**Minecraft 1.21.1 · Java 21**
+**Minecraft 1.21–1.21.1 · Java 21**
 
-- **Fabric:** Fabric Loader ≥ 0.20.1 + Fabric API
-- **NeoForge:** NeoForge 21.1.265+
+- **Fabric:** Fabric Loader ≥ 0.16.5 + 对应 Minecraft 版本的 Fabric API
+- **NeoForge:** 21.0.167+（Minecraft 1.21）/ 21.1.265+（Minecraft 1.21.1）
 
 > Fabric 与 NeoForge 使用两个独立 jar，请不要同时安装到同一个实例。
 
@@ -18,12 +18,13 @@
 
 ### Compatibility
 
+- 支持 Minecraft **1.21–1.21.1**。
 - 原有存档、方块 id、播放列表和广播配置保持兼容。
 - Fabric 与 NeoForge 版本不能安装在同一个 `mods/` 目录中。
 
 ### Known limitations
 
-- 仅支持 Minecraft **1.21.1**
+- 仅支持 Minecraft **1.21–1.21.1**
 - 仅支持 Ogg Vorbis，不支持 mp3 / m4a / flac
 - 随机模式下各客户端独立随机
 - 方块被打掉后播放列表配置会丢失（带 NBT 的搬运工具可保留）
