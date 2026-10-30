@@ -15,6 +15,12 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.server.level.ServerPlayer;
 
 public final class FabricNetwork implements Network {
+    private static Network clientDelegate;
+
+    public static void setClientDelegate(Network delegate) {
+        clientDelegate = delegate;
+    }
+
     public static void registerServer() {
         PayloadTypeRegistry.playC2S().register(SpeakerPayloads.Action.ID, SpeakerPayloads.Action.CODEC);
         PayloadTypeRegistry.playC2S().register(SpeakerPayloads.ImportChunk.ID, SpeakerPayloads.ImportChunk.CODEC);
@@ -41,12 +47,15 @@ public final class FabricNetwork implements Network {
 
     @Override
     public void sendToServer(CustomPacketPayload payload) {
-        throw new UnsupportedOperationException("Use the client network facade");
+        if (clientDelegate == null) {
+            throw new UnsupportedOperationException("Client networking is not available on this side");
+        }
+        clientDelegate.sendToServer(payload);
     }
 
     @Override
     public boolean canSendToServer(CustomPacketPayload.Type<?> id) {
-        return false;
+        return clientDelegate != null && clientDelegate.canSendToServer(id);
     }
 
     @Override

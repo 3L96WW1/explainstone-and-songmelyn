@@ -1,0 +1,11 @@
+{
+  "speaker_music": {
+    "category": "record",
+    "sounds": [
+      {
+        "name": "minecraft:records/13",
+        "stream": true
+      }
+    ]
+  }
+}

@@ -32,6 +32,7 @@ public final class FabricClientNetwork implements Network {
 
     @Override
     public void sendToPlayer(ServerPlayer player, CustomPacketPayload payload) {
-        throw new UnsupportedOperationException("Client cannot send to a server player directly");
+        // The global FabricNetwork handles server-bound sends; this should never be called.
+        throw new UnsupportedOperationException("Client facade cannot send to a server player");
     }
 }
