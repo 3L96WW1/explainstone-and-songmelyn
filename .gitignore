@@ -53,3 +53,6 @@ dist/
 .toolchain/
 .gradle-home/
 forge-1.20.1/
+
+# 1.20.1 分支的 worktree
+fabric-1.20.1/

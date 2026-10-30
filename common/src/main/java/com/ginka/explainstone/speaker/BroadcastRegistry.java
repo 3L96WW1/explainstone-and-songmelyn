@@ -61,7 +61,7 @@ public final class BroadcastRegistry {
 
         Map<BlockPos, Entry> map = ACTIVE.computeIfAbsent(level.dimension(), k -> new HashMap<>());
         int range = Math.max(32, Math.min(512, be.getTransmitRange()));
-        Entry old = map.get(pos);
+        Entry old = map.get(pos.immutable());
         long session = old != null && old.channel() == be.getChannel()
                 && old.index() == be.getSelected() && old.tracks().equals(be.getTracks())
                 ? old.session() : level.getGameTime();
@@ -71,14 +71,26 @@ public final class BroadcastRegistry {
                         session, startGameTime)
                 : null;
         if (entry == null) {
-            map.remove(pos);
+            map.remove(pos.immutable());
         } else {
             map.put(pos.immutable(), entry);
         }
 
-        for (ServerPlayer player : level.players()) {
-            if (player.blockPosition().closerThan(pos, range)) {
-                send(player, be.getChannel(), entry, level);
+        // 换频道 / 停止播放：先把旧频道的停止消息推到全服，否则旧收信端会一直响。
+        if (old != null && (entry == null || old.channel() != entry.channel())) {
+            for (ServerPlayer player : level.players()) {
+                send(player, old.channel(), null, level);
+            }
+        }
+        if (entry == null) {
+            for (ServerPlayer player : level.players()) {
+                send(player, be.getChannel(), null, level);
+            }
+        } else {
+            for (ServerPlayer player : level.players()) {
+                if (player.blockPosition().closerThan(pos, range)) {
+                    send(player, entry.channel(), entry, level);
+                }
             }
         }
     }
