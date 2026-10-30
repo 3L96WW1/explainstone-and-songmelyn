@@ -66,18 +66,31 @@ public final class BroadcastRegistry {
 
         Map<BlockPos, Entry> map = ACTIVE.computeIfAbsent(world.getRegistryKey(), k -> new HashMap<>());
         int range = Math.max(32, Math.min(512, be.getTransmitRange()));
+        Entry previous = map.get(pos.toImmutable());
         Entry entry = active
                 ? new Entry(be.getChannel(), be.getTracks(), be.getSelected(), be.getMode().ordinal(), range)
                 : null;
         if (entry == null) {
-            map.remove(pos);
+            map.remove(pos.toImmutable());
         } else {
             map.put(pos.toImmutable(), entry);
         }
 
-        for (ServerPlayerEntity player : world.getPlayers()) {
-            if (player.getBlockPos().isWithinDistance(pos, range)) {
-                send(player, be.getChannel(), entry);
+        // 换频道 / 停止播放：先把"旧频道已停止"推到全服，否则收信端会一直响 喵
+        if (previous != null && (entry == null || previous.channel() != entry.channel())) {
+            for (ServerPlayerEntity player : world.getPlayers()) {
+                send(player, previous.channel(), null);
+            }
+        }
+        if (entry == null) {
+            for (ServerPlayerEntity player : world.getPlayers()) {
+                send(player, be.getChannel(), null);
+            }
+        } else {
+            for (ServerPlayerEntity player : world.getPlayers()) {
+                if (player.getBlockPos().isWithinDistance(pos, range)) {
+                    send(player, entry.channel(), entry);
+                }
             }
         }
     }
