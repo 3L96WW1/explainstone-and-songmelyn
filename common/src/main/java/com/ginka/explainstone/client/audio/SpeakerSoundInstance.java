@@ -35,6 +35,7 @@ public abstract class SpeakerSoundInstance extends AbstractSoundInstance impleme
     private final Track track;
     private final double startOffsetSeconds;
     private volatile double durationSeconds = -1.0;
+    private volatile boolean started;
     private boolean stopped;
     private int ticks;
 
@@ -56,6 +57,10 @@ public abstract class SpeakerSoundInstance extends AbstractSoundInstance impleme
 
     public final Track track() {
         return this.track;
+    }
+
+    public final boolean isStarted() {
+        return this.started;
     }
 
     public final float[] progress() {
@@ -96,6 +101,7 @@ public abstract class SpeakerSoundInstance extends AbstractSoundInstance impleme
             }
             try {
                 AudioStream audio = new JOrbisAudioStream(stream);
+                this.started = true;
                 if (this.startOffsetSeconds > 0.0 && audio.getFormat().getFrameSize() > 0) {
                     double offset = this.startOffsetSeconds;
                     if (this.durationSeconds > 0.0) {

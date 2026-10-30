@@ -96,17 +96,29 @@ public final class SpeakerPayloads {
         }
     }
 
-    public record Broadcast(int channel, int mode, int index, boolean active, String tracks)
+    public record Broadcast(int channel, int mode, int index, boolean active, String tracks,
+                            long session, int elapsedSeconds)
             implements CustomPacketPayload {
         public static final CustomPacketPayload.Type<Broadcast> ID = new CustomPacketPayload.Type<>(
                 ResourceLocation.fromNamespaceAndPath("explainstone", "speaker_broadcast"));
-        public static final StreamCodec<RegistryFriendlyByteBuf, Broadcast> CODEC = StreamCodec.composite(
-                ByteBufCodecs.VAR_INT, Broadcast::channel,
-                ByteBufCodecs.VAR_INT, Broadcast::mode,
-                ByteBufCodecs.VAR_INT, Broadcast::index,
-                ByteBufCodecs.BOOL, Broadcast::active,
-                ByteBufCodecs.STRING_UTF8, Broadcast::tracks,
-                Broadcast::new);
+        public static final StreamCodec<RegistryFriendlyByteBuf, Broadcast> CODEC = StreamCodec.of(
+                (buffer, value) -> {
+                    buffer.writeVarInt(value.channel());
+                    buffer.writeVarInt(value.mode());
+                    buffer.writeVarInt(value.index());
+                    buffer.writeBoolean(value.active());
+                    buffer.writeUtf(value.tracks());
+                    buffer.writeLong(value.session());
+                    buffer.writeVarInt(value.elapsedSeconds());
+                },
+                buffer -> new Broadcast(
+                        buffer.readVarInt(),
+                        buffer.readVarInt(),
+                        buffer.readVarInt(),
+                        buffer.readBoolean(),
+                        buffer.readUtf(),
+                        buffer.readLong(),
+                        buffer.readVarInt()));
 
         @Override
         public CustomPacketPayload.Type<? extends CustomPacketPayload> type() {

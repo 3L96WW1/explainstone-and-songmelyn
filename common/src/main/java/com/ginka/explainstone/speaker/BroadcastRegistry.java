@@ -31,9 +31,14 @@ public final class BroadcastRegistry {
     private BroadcastRegistry() {
     }
 
-    private record Entry(int channel, List<Track> tracks, int index, int mode, int range) {
+    private record Entry(int channel, List<Track> tracks, int index, int mode, int range,
+                         long session, long startGameTime) {
         Track current() {
             return this.index >= 0 && this.index < this.tracks.size() ? this.tracks.get(this.index) : null;
+        }
+
+        int elapsedSeconds(ServerLevel level) {
+            return (int) Math.max(0L, (level.getGameTime() - this.startGameTime) / 20L);
         }
     }
 
@@ -56,8 +61,14 @@ public final class BroadcastRegistry {
 
         Map<BlockPos, Entry> map = ACTIVE.computeIfAbsent(level.dimension(), k -> new HashMap<>());
         int range = Math.max(32, Math.min(512, be.getTransmitRange()));
+        Entry old = map.get(pos);
+        long session = old != null && old.channel() == be.getChannel()
+                && old.index() == be.getSelected() && old.tracks().equals(be.getTracks())
+                ? old.session() : level.getGameTime();
+        long startGameTime = old != null && old.session() == session ? old.startGameTime() : level.getGameTime();
         Entry entry = active
-                ? new Entry(be.getChannel(), be.getTracks(), be.getSelected(), be.getMode().ordinal(), range)
+                ? new Entry(be.getChannel(), be.getTracks(), be.getSelected(), be.getMode().ordinal(), range,
+                        session, startGameTime)
                 : null;
         if (entry == null) {
             map.remove(pos);
@@ -67,7 +78,7 @@ public final class BroadcastRegistry {
 
         for (ServerPlayer player : level.players()) {
             if (player.blockPosition().closerThan(pos, range)) {
-                send(player, be.getChannel(), entry);
+                send(player, be.getChannel(), entry, level);
             }
         }
     }
@@ -82,7 +93,7 @@ public final class BroadcastRegistry {
             return;
         }
         for (ServerPlayer player : level.players()) {
-            send(player, removed.channel(), null);
+            send(player, removed.channel(), null, level);
         }
     }
 
@@ -94,7 +105,7 @@ public final class BroadcastRegistry {
         }
         for (Map.Entry<BlockPos, Entry> e : map.entrySet()) {
             if (player.blockPosition().closerThan(e.getKey(), e.getValue().range())) {
-                send(player, e.getValue().channel(), e.getValue());
+                send(player, e.getValue().channel(), e.getValue(), level);
             }
         }
     }
@@ -106,19 +117,20 @@ public final class BroadcastRegistry {
         }
         for (ServerPlayer player : level.players()) {
             for (Entry entry : map.values()) {
-                send(player, entry.channel(), null);
+                send(player, entry.channel(), null, level);
             }
         }
         map.clear();
     }
 
-    private static void send(ServerPlayer player, int channel, Entry entry) {
+    private static void send(ServerPlayer player, int channel, Entry entry, ServerLevel level) {
         if (entry == null) {
             Explainstone.network().sendToPlayer(player,
-                    new SpeakerPayloads.Broadcast(channel, 0, 0, false, ""));
+                    new SpeakerPayloads.Broadcast(channel, 0, 0, false, "", 0L, 0));
         } else {
             Explainstone.network().sendToPlayer(player, new SpeakerPayloads.Broadcast(
-                    entry.channel(), entry.mode(), entry.index(), true, encode(entry.tracks())));
+                    entry.channel(), entry.mode(), entry.index(), true, encode(entry.tracks()),
+                    entry.session(), entry.elapsedSeconds(level)));
         }
     }
 }

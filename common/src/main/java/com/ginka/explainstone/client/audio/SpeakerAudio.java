@@ -53,7 +53,7 @@ public final class SpeakerAudio {
 
     private static final Map<BlockPos, Active> ACTIVE = new HashMap<>();
     private static final Map<Integer, BroadcastInfo> BROADCASTS = new HashMap<>();
-    private static final Map<Integer, long[]> BROADCAST_START = new HashMap<>();
+    private static final Map<String, Long> LOCAL_START = new HashMap<>();
     private static final Set<String> REQUESTED = new HashSet<>();
     private static final Random RANDOM = new Random();
 
@@ -64,7 +64,8 @@ public final class SpeakerAudio {
     private static boolean initialised;
     private static boolean warnedMissingFactory;
 
-    private record BroadcastInfo(PlayMode mode, int index, List<Track> tracks) {
+    private record BroadcastInfo(PlayMode mode, int index, List<Track> tracks, long session,
+                                  int elapsedSeconds, long receivedClock) {
     }
 
     private static final class Active {
@@ -99,7 +100,7 @@ public final class SpeakerAudio {
     public static void shutdown() {
         stopAll();
         BROADCASTS.clear();
-        BROADCAST_START.clear();
+        LOCAL_START.clear();
         REQUESTED.clear();
         speakers = List.of();
         clock = 0L;
@@ -124,22 +125,16 @@ public final class SpeakerAudio {
         if (world == null || player == null) {
             stopAll();
             BROADCASTS.clear();
-            BROADCAST_START.clear();
+            LOCAL_START.clear();
             speakers = List.of();
             return;
         }
 
-        clock++;
+        if (!client.isPaused()) {
+            clock++;
+        }
         if (tickCounter++ % SCAN_INTERVAL == 0) {
             scan(world, player.blockPosition());
-        }
-
-        BROADCAST_START.keySet().removeIf(channel -> !BROADCASTS.containsKey(channel));
-        for (Map.Entry<Integer, BroadcastInfo> entry : BROADCASTS.entrySet()) {
-            long[] start = BROADCAST_START.get(entry.getKey());
-            if (start == null || (int) start[1] != entry.getValue().index()) {
-                BROADCAST_START.put(entry.getKey(), new long[]{clock, entry.getValue().index()});
-            }
         }
 
         SoundManager soundManager = client.getSoundManager();
@@ -159,9 +154,7 @@ public final class SpeakerAudio {
                 }
                 int index = Math.max(0, Math.min(info.tracks().size() - 1, info.index()));
                 Track track = info.tracks().get(index);
-                long[] broadcastStart = BROADCAST_START.get(be.getChannel());
-                double offset = broadcastStart == null ? 0.0
-                        : Math.max(0L, clock - broadcastStart[0]) / 20.0;
+                double offset = broadcastElapsed(info);
                 Active active = ACTIVE.get(pos);
                 if (active == null || !active.receive || !active.track.equals(track)
                         || active.index != index || !isActive(active)) {
@@ -179,11 +172,14 @@ public final class SpeakerAudio {
                     continue;
                 }
                 int selected = Math.max(0, Math.min(tracks.size() - 1, be.getSelected()));
+                Track selectedTrack = tracks.get(selected);
+                long localStart = LOCAL_START.computeIfAbsent(selectedTrack.id(), id -> clock);
+                double localOffset = Math.max(0L, clock - localStart) / 20.0;
                 Active active = ACTIVE.get(pos);
                 if (active == null || active.receive || active.selected != selected) {
                     stop(pos);
-                    play(soundManager, pos, tracks.get(selected), selected, selected, be.getMode(), false,
-                            be.getAudibleRange(), be.getVolume(), 0.0);
+                    play(soundManager, pos, selectedTrack, selected, selected, be.getMode(), false,
+                            be.getAudibleRange(), be.getVolume(), localOffset);
                 } else if (!isActive(active)) {
                     int next = switch (active.mode) {
                         case REPEAT_ONE -> active.index;
@@ -197,8 +193,10 @@ public final class SpeakerAudio {
                         case SEQUENCE -> (active.index + 1) % tracks.size();
                     };
                     stop(pos);
-                    play(soundManager, pos, tracks.get(next), next, selected, active.mode, false,
-                            be.getAudibleRange(), be.getVolume(), 0.0);
+                    Track nextTrack = tracks.get(next);
+                    long start = LOCAL_START.computeIfAbsent(nextTrack.id(), id -> clock);
+                    play(soundManager, pos, nextTrack, next, selected, active.mode, false,
+                            be.getAudibleRange(), be.getVolume(), Math.max(0L, clock - start) / 20.0);
                 } else {
                     active.sound.update(be.getAudibleRange(), be.getVolume());
                 }
@@ -218,14 +216,20 @@ public final class SpeakerAudio {
             }
         }
 
+        LOCAL_START.keySet().removeIf(id -> ACTIVE.values().stream()
+                .noneMatch(active -> !active.receive && active.track.id().equals(id)));
+
         if (clock % 40 == 0) {
             for (BlockPos pos : speakers) {
                 if (world.getBlockEntity(pos) instanceof SpeakerBlockEntity be
-                        && be.isReceiveMode() && !BROADCASTS.containsKey(be.getChannel())
+                        && be.isReceiveMode()
                         && Explainstone.network().canSendToServer(SpeakerPayloads.Resync.ID)) {
-                    Explainstone.network().sendToServer(new SpeakerPayloads.Resync());
-                    LOGGER.info("request broadcast resync for ch={}", be.getChannel());
-                    break;
+                    BroadcastInfo info = BROADCASTS.get(be.getChannel());
+                    if (info == null || clock - info.receivedClock() > 120L) {
+                        Explainstone.network().sendToServer(new SpeakerPayloads.Resync());
+                        LOGGER.info("request broadcast resync for ch={}", be.getChannel());
+                        break;
+                    }
                 }
             }
         }
@@ -356,10 +360,13 @@ public final class SpeakerAudio {
         return active == null ? null : active.sound.progress();
     }
 
+    private static double broadcastElapsed(BroadcastInfo info) {
+        return info.elapsedSeconds() + Math.max(0L, clock - info.receivedClock()) / 20.0;
+    }
+
     public static float[] broadcastProgress(int channel) {
         BroadcastInfo info = BROADCASTS.get(channel);
-        long[] start = BROADCAST_START.get(channel);
-        if (info == null || start == null || info.tracks().isEmpty()) {
+        if (info == null || info.tracks().isEmpty()) {
             return null;
         }
         int index = Math.max(0, Math.min(info.tracks().size() - 1, info.index()));
@@ -367,14 +374,13 @@ public final class SpeakerAudio {
         if (duration <= 0) {
             return null;
         }
-        double elapsed = Math.max(0L, clock - start[0]) / 20.0;
+        double elapsed = broadcastElapsed(info);
         return new float[]{(float) (elapsed % duration), (float) duration};
     }
 
     public static void onBroadcast(SpeakerPayloads.Broadcast payload) {
         if (!payload.active()) {
             BROADCASTS.remove(payload.channel());
-            BROADCAST_START.remove(payload.channel());
             LOGGER.info("broadcast ch={} stopped", payload.channel());
             return;
         }
@@ -386,14 +392,23 @@ public final class SpeakerAudio {
             }
         }
         BROADCASTS.put(payload.channel(),
-                new BroadcastInfo(PlayMode.byOrdinal(payload.mode()), payload.index(), List.copyOf(tracks)));
+                new BroadcastInfo(PlayMode.byOrdinal(payload.mode()), payload.index(), List.copyOf(tracks),
+                        payload.session(), payload.elapsedSeconds(), clock));
         LOGGER.info("broadcast ch={} mode={} index={} tracks={}",
                 payload.channel(), payload.mode(), payload.index(), tracks.size());
     }
 
     public static void onAudioReceived(String sha1) {
-        // The stream itself is already responsible for retrying a missing file;
-        // do not tear down a live instance when duplicate chunks arrive.
         REQUESTED.remove(sha1);
+        Iterator<Map.Entry<BlockPos, Active>> iterator = ACTIVE.entrySet().iterator();
+        while (iterator.hasNext()) {
+            Map.Entry<BlockPos, Active> entry = iterator.next();
+            if (entry.getValue().track.isFile() && entry.getValue().track.sha1().equals(sha1)
+                    && !entry.getValue().sound.isStarted()) {
+                entry.getValue().sound.stop();
+                Minecraft.getInstance().getSoundManager().stop(entry.getValue().sound);
+                iterator.remove();
+            }
+        }
     }
 }
