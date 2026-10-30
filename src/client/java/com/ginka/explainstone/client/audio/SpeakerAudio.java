@@ -214,8 +214,10 @@ public final class SpeakerAudio {
             for (BlockPos pos : speakers) {
                 if (world.getBlockEntity(pos) instanceof SpeakerBlockEntity be
                         && be.isReceiveMode() && !BROADCASTS.containsKey(be.getChannel())
-                        && ClientPlayNetworking.canSend(SpeakerPayloads.Resync.ID)) {
-                    ClientPlayNetworking.send(new SpeakerPayloads.Resync());
+                        && ClientPlayNetworking.canSend(SpeakerPayloads.CH_RESYNC)) {
+                    var buf = net.fabricmc.fabric.api.networking.v1.PacketByteBufs.create();
+                    new SpeakerPayloads.Resync().write(buf);
+                    ClientPlayNetworking.send(SpeakerPayloads.CH_RESYNC, buf);
                     LOGGER.info("request broadcast resync for ch={}", be.getChannel());
                     break;
                 }
@@ -458,7 +460,7 @@ public final class SpeakerAudio {
             }
             try (OggAudioStream ogg = new OggAudioStream(stream)) {
                 javax.sound.sampled.AudioFormat format = ogg.getFormat();
-                ByteBuffer pcm = ogg.readAll();
+                ByteBuffer pcm = ogg.getBuffer();
                 if (pcm == null || !pcm.hasRemaining()) {
                     return;
                 }
@@ -550,8 +552,10 @@ public final class SpeakerAudio {
         if (!REQUESTED.add(sha1)) {
             return;
         }
-        if (ClientPlayNetworking.canSend(SpeakerPayloads.RequestAudio.ID)) {
-            ClientPlayNetworking.send(new SpeakerPayloads.RequestAudio(sha1));
+        if (ClientPlayNetworking.canSend(SpeakerPayloads.CH_REQUEST)) {
+            var buf = net.fabricmc.fabric.api.networking.v1.PacketByteBufs.create();
+            new SpeakerPayloads.RequestAudio(sha1).write(buf);
+            ClientPlayNetworking.send(SpeakerPayloads.CH_REQUEST, buf);
         }
     }
 

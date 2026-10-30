@@ -37,10 +37,14 @@ public final class SpeakerAudioCache {
     }
 
     public static void registerReceivers() {
-        ClientPlayNetworking.registerGlobalReceiver(SpeakerPayloads.AudioChunk.ID, (payload, context) ->
-                context.client().execute(() -> onChunk(payload)));
-        ClientPlayNetworking.registerGlobalReceiver(SpeakerPayloads.Broadcast.ID, (payload, context) ->
-                context.client().execute(() -> SpeakerAudio.onBroadcast(payload)));
+        ClientPlayNetworking.registerGlobalReceiver(SpeakerPayloads.CH_AUDIO, (client, handler, buf, sender) -> {
+            SpeakerPayloads.AudioChunk payload = SpeakerPayloads.AudioChunk.read(buf);
+            client.execute(() -> onChunk(payload));
+        });
+        ClientPlayNetworking.registerGlobalReceiver(SpeakerPayloads.CH_BROADCAST, (client, handler, buf, sender) -> {
+            SpeakerPayloads.Broadcast payload = SpeakerPayloads.Broadcast.read(buf);
+            client.execute(() -> SpeakerAudio.onBroadcast(payload));
+        });
     }
 
     private static void onChunk(SpeakerPayloads.AudioChunk payload) {
@@ -80,7 +84,9 @@ public final class SpeakerAudioCache {
                 int len = Math.min(SpeakerPayloads.CHUNK_SIZE, bytes.length - from);
                 byte[] part = new byte[len];
                 System.arraycopy(bytes, from, part, 0, len);
-                ClientPlayNetworking.send(new SpeakerPayloads.ImportChunk(pos, label, sha1, i, total, part));
+                var buf = net.fabricmc.fabric.api.networking.v1.PacketByteBufs.create();
+                new SpeakerPayloads.ImportChunk(pos, label, sha1, i, total, part).write(buf);
+                ClientPlayNetworking.send(SpeakerPayloads.CH_IMPORT, buf);
             }
             message(client, Text.translatable("message.explainstone.import.ok", label));
         } catch (IOException e) {

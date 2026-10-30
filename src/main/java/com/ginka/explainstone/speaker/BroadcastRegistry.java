@@ -111,6 +111,13 @@ public final class BroadcastRegistry {
     }
 
     /** 玩家进服时补发当前在播的频道 喵 */
+    private static void sendBroadcast(net.minecraft.server.network.ServerPlayerEntity player,
+                                      SpeakerPayloads.Broadcast payload) {
+        var buf = net.fabricmc.fabric.api.networking.v1.PacketByteBufs.create();
+        payload.write(buf);
+        ServerPlayNetworking.send(player, SpeakerPayloads.CH_BROADCAST, buf);
+    }
+
     public static void onJoin(ServerPlayerEntity player) {
         Map<BlockPos, Entry> map = ACTIVE.get(player.getWorld().getRegistryKey());
         if (map == null) {
@@ -139,9 +146,9 @@ public final class BroadcastRegistry {
 
     private static void send(ServerPlayerEntity player, int channel, Entry entry) {
         if (entry == null) {
-            ServerPlayNetworking.send(player, new SpeakerPayloads.Broadcast(channel, 0, 0, false, ""));
+            sendBroadcast(player, new SpeakerPayloads.Broadcast(channel, 0, 0, false, ""));
         } else {
-            ServerPlayNetworking.send(player, new SpeakerPayloads.Broadcast(
+            sendBroadcast(player, new SpeakerPayloads.Broadcast(
                     entry.channel(), entry.mode(), entry.index(), true, encode(entry.tracks())));
         }
     }

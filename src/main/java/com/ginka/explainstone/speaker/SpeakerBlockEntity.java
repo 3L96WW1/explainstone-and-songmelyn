@@ -235,8 +235,8 @@ public class SpeakerBlockEntity extends BlockEntity {
 
     // ------------------------------------------------------------------ NBT
     @Override
-    protected void writeNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup registries) {
-        super.writeNbt(nbt, registries);
+    public void writeNbt(NbtCompound nbt) {
+        super.writeNbt(nbt);
         NbtList list = new NbtList();
         for (Track track : this.tracks) {
             list.add(track.toNbt());
@@ -256,8 +256,8 @@ public class SpeakerBlockEntity extends BlockEntity {
     }
 
     @Override
-    protected void readNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup registries) {
-        super.readNbt(nbt, registries);
+    public void readNbt(NbtCompound nbt) {
+        super.readNbt(nbt);
         this.tracks.clear();
         NbtList list = nbt.getList("tracks", NbtElement.COMPOUND_TYPE);
         for (int i = 0; i < list.size(); i++) {
@@ -313,8 +313,8 @@ public class SpeakerBlockEntity extends BlockEntity {
     }
 
     @Override
-    public NbtCompound toInitialChunkDataNbt(RegistryWrapper.WrapperLookup registries) {
-        return this.createNbt(registries);
+    public NbtCompound toInitialChunkDataNbt() {
+        return this.createNbt();
     }
 
     @Override

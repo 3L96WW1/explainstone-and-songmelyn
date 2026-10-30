@@ -61,13 +61,13 @@ public class SpeakerBlock extends Block implements BlockEntityProvider {
     }
 
     @Override
-    protected ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, BlockHitResult hit) {
+    public ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, net.minecraft.util.Hand hand, BlockHitResult hit) {
         // 界面本身由客户端打开（见 ExplainstoneClient），这里只需要吃掉这次交互 喵
         return world.isClient ? ActionResult.SUCCESS : ActionResult.CONSUME;
     }
 
     @Override
-    protected void neighborUpdate(BlockState state, World world, BlockPos pos, Block sourceBlock, BlockPos sourcePos,
+    public void neighborUpdate(BlockState state, World world, BlockPos pos, Block sourceBlock, BlockPos sourcePos,
                                   boolean notify) {
         if (!world.isClient && world.getBlockEntity(pos) instanceof SpeakerBlockEntity be
                 && !be.isReceiveMode()) {
@@ -85,12 +85,12 @@ public class SpeakerBlock extends Block implements BlockEntityProvider {
     }
 
     @Override
-    protected boolean hasComparatorOutput(BlockState state) {
+    public boolean hasComparatorOutput(BlockState state) {
         return true;
     }
 
     @Override
-    protected int getComparatorOutput(BlockState state, World world, BlockPos pos) {
+    public int getComparatorOutput(BlockState state, World world, BlockPos pos) {
         // 正在播放 → 15 级红石信号 喵
         return state.get(PLAYING) ? 15 : 0;
     }

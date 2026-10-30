@@ -436,15 +436,17 @@ public class SpeakerScreen extends Screen {
     }
 
     private void send(int action, int value) {
-        if (ClientPlayNetworking.canSend(SpeakerPayloads.Action.ID)) {
-            ClientPlayNetworking.send(new SpeakerPayloads.Action(this.pos, action, value));
+        if (ClientPlayNetworking.canSend(SpeakerPayloads.CH_ACTION)) {
+            var buf = net.fabricmc.fabric.api.networking.v1.PacketByteBufs.create();
+            new SpeakerPayloads.Action(this.pos, action, value).write(buf);
+            ClientPlayNetworking.send(SpeakerPayloads.CH_ACTION, buf);
         }
     }
 
     // ---------------------------------------------------------------- 渲染 喵
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
-        this.renderBackground(context, mouseX, mouseY, delta);
+        this.renderBackground(context);
         super.render(context, mouseX, mouseY, delta);
 
         SpeakerBlockEntity be = this.speaker();
@@ -553,7 +555,7 @@ public class SpeakerScreen extends Screen {
     }
 
     @Override
-    public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
+    public boolean mouseScrolled(double mouseX, double mouseY, double verticalAmount) {
         SpeakerBlockEntity be = this.speaker();
         int maxScroll = be == null ? 0 : Math.max(0, be.getTracks().size() - this.listRows);
         this.scroll = Math.max(0, Math.min(maxScroll, this.scroll - (int) Math.signum(verticalAmount)));

@@ -2,14 +2,14 @@
 
 [![build](https://github.com/3L96WW1/explainstone-and-songmelyn/actions/workflows/build.yml/badge.svg)](https://github.com/3L96WW1/explainstone-and-songmelyn/actions/workflows/build.yml)
 [![license](https://img.shields.io/badge/license-MPL--2.0-blue)](LICENSE)
-![minecraft](https://img.shields.io/badge/Minecraft-1.21.1-green)
-![fabric](https://img.shields.io/badge/Fabric-0.20.1%2B-orange)
+![minecraft](https://img.shields.io/badge/Minecraft-1.20.1-green)
+![fabric](https://img.shields.io/badge/Fabric-0.15%2B-orange)
 
 ![Explainstone and Songmelyn](docs/screenshots/02-variants-playing.jpg)
 
 ### English summary
 
-**Explainstone and Songmelyn** adds stone speakers to Minecraft 1.21.1 (Fabric) that play **Ogg Vorbis** music —
+**Explainstone and Songmelyn** adds stone speakers to Minecraft 1.20.1 (Fabric) that play **Ogg Vorbis** music —
 either imported by you (stored in the world, shared with other players) or streamed from a broadcast transmitter.
 
 - 6 Explainstone variants (rock / stone / cobblestone / granite / diorite / andesite) + wall-mounted **Songmelyn**
@@ -21,7 +21,7 @@ either imported by you (stored in the world, shared with other players) or strea
 
 
 
-Minecraft **1.21.1** / Fabric 模组：伪装成石头的音响，可以播放自带或你自己导入的 ogg 音乐，
+Minecraft **1.20.1** / Fabric 模组：伪装成石头的音响，可以播放自带或你自己导入的 ogg 音乐，
 支持红石触发、频道广播（512 格信号）、收音、进度同步。
 
 作者：**GINKA_3L96WW1**
@@ -55,7 +55,7 @@ Minecraft **1.21.1** / Fabric 模组：伪装成石头的音响，可以播放�
 ## 下载 / Download
 
 **玩家**：到 [Releases](https://github.com/3L96WW1/explainstone-and-songmelyn/releases) 下载最新的
-`explainstone-and-songmelyn-*.jar`，和 [Fabric API](https://modrinth.com/mod/fabric-api) 一起丢进 `mods/` 即可（需要 Fabric Loader ≥ 0.20.1 + Java 21）。
+`explainstone-and-songmelyn-*.jar`，和 [Fabric API](https://modrinth.com/mod/fabric-api) 一起丢进 `mods/` 即可（需要 Fabric Loader ≥ 0.15 + Java 17）。
 
 **想自己构建**：
 
@@ -67,7 +67,7 @@ cd explainstone-and-songmelyn
 
 ## 安装
 
-1. 安装 [Fabric Loader](https://fabricmc.net/use/) ≥ 0.20.1，Minecraft **1.21.1**，Java 21
+1. 安装 [Fabric Loader](https://fabricmc.net/use/) ≥ 0.15，Minecraft **1.20.1**，Java 17
 2. 把 [Fabric API](https://modrinth.com/mod/fabric-api) 和本模组的 jar 一起放进 `mods/`
 
 ## 使用
@@ -111,7 +111,7 @@ cd explainstone-and-songmelyn
 
 ## 已知限制
 
-- 只支持 Minecraft **1.21.1**
+- 只支持 Minecraft **1.20.1**
 - 只支持 `.ogg`，不支持 mp3 / m4a / flac
 - 多人环境下"跨玩家"的进度基准是各自收到广播的时刻，会差一个网络延迟；**随机模式**各端独立随机
 - 播放列表存在方块实体里，**打掉方块配置会丢失**（用带 NBT 的搬运工具可以带走）

@@ -13,7 +13,6 @@
 package com.ginka.explainstone.speaker;
 
 import com.ginka.explainstone.SpeakerBlock;
-import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.block.Block;
@@ -49,30 +48,34 @@ public final class SpeakerNetworking {
     private SpeakerNetworking() {
     }
 
+    /** 1.20.1 不需要显式注册 payload 类型（用 Identifier 通道） 喵 */
     public static void registerPayloadTypes() {
-        PayloadTypeRegistry.playC2S().register(SpeakerPayloads.Action.ID, SpeakerPayloads.Action.CODEC);
-        PayloadTypeRegistry.playC2S().register(SpeakerPayloads.ImportChunk.ID, SpeakerPayloads.ImportChunk.CODEC);
-        PayloadTypeRegistry.playC2S().register(SpeakerPayloads.RequestAudio.ID, SpeakerPayloads.RequestAudio.CODEC);
-        PayloadTypeRegistry.playC2S().register(SpeakerPayloads.Resync.ID, SpeakerPayloads.Resync.CODEC);
-        PayloadTypeRegistry.playS2C().register(SpeakerPayloads.AudioChunk.ID, SpeakerPayloads.AudioChunk.CODEC);
-        PayloadTypeRegistry.playS2C().register(SpeakerPayloads.Broadcast.ID, SpeakerPayloads.Broadcast.CODEC);
     }
 
     public static void registerServerHandlers() {
-        ServerPlayNetworking.registerGlobalReceiver(SpeakerPayloads.Action.ID,
-                (payload, context) -> context.server().execute(() -> handleAction(context.player(), payload)));
+        ServerPlayNetworking.registerGlobalReceiver(SpeakerPayloads.CH_ACTION,
+                (server, player, handler, buf, sender) -> {
+                    SpeakerPayloads.Action payload = SpeakerPayloads.Action.read(buf);
+                    server.execute(() -> handleAction(player, payload));
+                });
 
-        ServerPlayNetworking.registerGlobalReceiver(SpeakerPayloads.ImportChunk.ID,
-                (payload, context) -> context.server().execute(() -> handleImport(context.player(), payload)));
+        ServerPlayNetworking.registerGlobalReceiver(SpeakerPayloads.CH_IMPORT,
+                (server, player, handler, buf, sender) -> {
+                    SpeakerPayloads.ImportChunk payload = SpeakerPayloads.ImportChunk.read(buf);
+                    server.execute(() -> handleImport(player, payload));
+                });
 
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) ->
                 server.execute(() -> BroadcastRegistry.onJoin(handler.getPlayer())));
 
-        ServerPlayNetworking.registerGlobalReceiver(SpeakerPayloads.Resync.ID,
-                (payload, context) -> context.server().execute(() -> BroadcastRegistry.onJoin(context.player())));
+        ServerPlayNetworking.registerGlobalReceiver(SpeakerPayloads.CH_RESYNC,
+                (server, player, handler, buf, sender) -> server.execute(() -> BroadcastRegistry.onJoin(player)));
 
-        ServerPlayNetworking.registerGlobalReceiver(SpeakerPayloads.RequestAudio.ID,
-                (payload, context) -> context.server().execute(() -> handleRequest(context.player(), payload)));
+        ServerPlayNetworking.registerGlobalReceiver(SpeakerPayloads.CH_REQUEST,
+                (server, player, handler, buf, sender) -> {
+                    SpeakerPayloads.RequestAudio payload = SpeakerPayloads.RequestAudio.read(buf);
+                    server.execute(() -> handleRequest(player, payload));
+                });
     }
 
     // ------------------------------------------------------------ 音频库路径 喵
@@ -253,7 +256,9 @@ public final class SpeakerNetworking {
                 int len = Math.min(SpeakerPayloads.CHUNK_SIZE, bytes.length - from);
                 byte[] part = new byte[len];
                 System.arraycopy(bytes, from, part, 0, len);
-                ServerPlayNetworking.send(player, new SpeakerPayloads.AudioChunk(sha1, sha1, i, total, part));
+                net.minecraft.network.PacketByteBuf out = net.fabricmc.fabric.api.networking.v1.PacketByteBufs.create();
+                new SpeakerPayloads.AudioChunk(sha1, sha1, i, total, part).write(out);
+                ServerPlayNetworking.send(player, SpeakerPayloads.CH_AUDIO, out);
             }
         } catch (IOException ignored) {
         }

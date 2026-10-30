@@ -69,12 +69,12 @@ public class BroadcastTransmitterBlock extends Block implements BlockEntityProvi
     }
 
     @Override
-    protected ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, BlockHitResult hit) {
+    public ActionResult onUse(BlockState state, World world, BlockPos pos, PlayerEntity player, net.minecraft.util.Hand hand, BlockHitResult hit) {
         return world.isClient ? ActionResult.SUCCESS : ActionResult.CONSUME;
     }
 
     @Override
-    protected void neighborUpdate(BlockState state, World world, BlockPos pos, Block sourceBlock, BlockPos sourcePos,
+    public void neighborUpdate(BlockState state, World world, BlockPos pos, Block sourceBlock, BlockPos sourcePos,
                                   boolean notify) {
         if (!world.isClient && world.getBlockEntity(pos) instanceof SpeakerBlockEntity be) {
             boolean powered = world.isReceivingRedstonePower(pos);
@@ -98,7 +98,7 @@ public class BroadcastTransmitterBlock extends Block implements BlockEntityProvi
     }
 
     @Override
-    protected void onStateReplaced(BlockState state, World world, BlockPos pos, BlockState newState, boolean moved) {
+    public void onStateReplaced(BlockState state, World world, BlockPos pos, BlockState newState, boolean moved) {
         if (!world.isClient && !state.isOf(newState.getBlock()) && world instanceof ServerWorld serverWorld) {
             BroadcastRegistry.forget(serverWorld, pos);
         }
@@ -106,12 +106,12 @@ public class BroadcastTransmitterBlock extends Block implements BlockEntityProvi
     }
 
     @Override
-    protected boolean hasComparatorOutput(BlockState state) {
+    public boolean hasComparatorOutput(BlockState state) {
         return true;
     }
 
     @Override
-    protected int getComparatorOutput(BlockState state, World world, BlockPos pos) {
+    public int getComparatorOutput(BlockState state, World world, BlockPos pos) {
         return state.get(PLAYING) ? 15 : 0;
     }
 
