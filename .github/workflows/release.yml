@@ -27,7 +27,8 @@ jobs:
       - name: collect mod jar
         run: |
           mkdir -p dist
-          cp build/libs/*.jar dist/ || true
+          cp fabric/build/libs/*.jar dist/ || true
+          cp neoforge/build/libs/*.jar dist/ || true
           rm -f dist/*-sources.jar
           ls -l dist
       - name: create release

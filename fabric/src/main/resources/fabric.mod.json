@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "id": "explainstone",
+  "version": "${version}",
+  "name": "Explainstone and Songmelyn",
+  "description": "Stone speakers that play imported or broadcast Ogg music.",
+  "authors": ["GINKA_3L96WW1"],
+  "license": "MPL-2.0",
+  "icon": "assets/explainstone/icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "main": ["com.ginka.explainstone.fabric.ExplainstoneFabric"],
+    "client": ["com.ginka.explainstone.fabric.ExplainstoneFabricClient"]
+  },
+  "depends": {
+    "fabricloader": ">=${fabric_loader_version}",
+    "minecraft": "~${minecraft_version}",
+    "java": ">=${java_version}",
+    "fabric-api": "*"
+  }
+}

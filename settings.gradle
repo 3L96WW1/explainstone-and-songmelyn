@@ -1,13 +1,38 @@
 pluginManagement {
 	repositories {
-		maven {
-			name = 'Fabric'
-			url = 'https://maven.fabricmc.net/'
-		}
-		mavenCentral()
 		gradlePluginPortal()
+		mavenCentral()
+		exclusiveContent {
+			forRepository {
+				maven {
+					name = 'Fabric'
+					url = uri('https://maven.fabricmc.net')
+				}
+			}
+			filter {
+				includeGroupAndSubgroups('net.fabricmc')
+				includeGroup('fabric-loom')
+			}
+		}
+		exclusiveContent {
+			forRepository {
+				maven {
+					name = 'NeoForge'
+					url = uri('https://maven.neoforged.net/releases')
+				}
+			}
+			filter {
+				includeGroupAndSubgroups('net.neoforged')
+			}
+		}
 	}
 }
 
-// Should match your modid
+plugins {
+	id 'org.gradle.toolchains.foojay-resolver-convention' version '0.8.0'
+}
+
 rootProject.name = 'explainstone'
+include('common')
+include('fabric')
+include('neoforge')
