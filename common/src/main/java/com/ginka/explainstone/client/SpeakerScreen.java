@@ -25,8 +25,9 @@ import com.ginka.explainstone.speaker.SpeakerBlockEntity;
 import com.ginka.explainstone.speaker.SpeakerPayloads;
 import com.ginka.explainstone.speaker.Track;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.network.chat.Component;
@@ -443,9 +444,8 @@ public class SpeakerScreen extends Screen {
 
     // ---------------------------------------------------------------- 渲染 喵
     @Override
-    public void render(GuiGraphics context, int mouseX, int mouseY, float delta) {
-        this.renderBackground(context, mouseX, mouseY, delta);
-        super.render(context, mouseX, mouseY, delta);
+    public void extractRenderState(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta) {
+        super.extractRenderState(context, mouseX, mouseY, delta);
 
         SpeakerBlockEntity be = this.speaker();
         boolean transmitter = this.isTransmitter();
@@ -461,20 +461,20 @@ public class SpeakerScreen extends Screen {
             title = title.copy().append(Component.translatable(
                     transmitter ? "screen.explainstone.sending" : "screen.explainstone.playing"));
         }
-        context.drawCenteredString(this.font, title, this.width / 2, this.titleY, 0xFFFFFF);
+        context.centeredText(this.font, title, this.width / 2, this.titleY, 0xFFFFFF);
 
         if (receive) {
-            context.drawCenteredString(this.font,
+            context.centeredText(this.font,
                     Component.translatable("screen.explainstone.receive.title"),
                     this.width / 2, this.listTop + 10, 0x9BE8C8);
-            context.drawCenteredString(this.font,
+            context.centeredText(this.font,
                     Component.translatable("screen.explainstone.receive.hint"),
                     this.width / 2, this.listTop + 26, 0x909090);
         } else {
             int maxScroll = Math.max(0, tracks.size() - this.listRows);
             this.scroll = Math.min(this.scroll, maxScroll);
             if (tracks.isEmpty()) {
-                context.drawString(this.font, Component.translatable("screen.explainstone.list.empty"),
+                context.text(this.font, Component.translatable("screen.explainstone.list.empty"),
                         this.left + 8, this.listTop + 2, 0xA0A0A0);
             }
             for (int row = 0; row < this.listRows; row++) {
@@ -491,10 +491,10 @@ public class SpeakerScreen extends Screen {
                 if (track.isFile() && !AudioSources.hasLocal(track)) {
                     name = name + "  " + Component.translatable("screen.explainstone.list.downloading").getString();
                 }
-                context.drawString(this.font, name, this.left + 4, y, 0xFFFFFF);
+                context.text(this.font, name, this.left + 4, y, 0xFFFFFF);
                 String length = formatTime(AudioSources.durationSeconds(track));
                 if (length != null) {
-                    context.drawString(this.font, length,
+                    context.text(this.font, length,
                             this.left + this.panelW - 4 - this.font.width(length), y, 0xB0C8FF);
                 }
             }
@@ -507,17 +507,17 @@ public class SpeakerScreen extends Screen {
                 context.fill(this.left, barTop, this.left + this.panelW, barBottom, 0x60FFFFFF);
                 int filled = Math.round(this.panelW * Math.max(0f, Math.min(1f, progress[0] / progress[1])));
                 context.fill(this.left, barTop, this.left + filled, barBottom, 0xC06BCB77);
-                context.drawCenteredString(this.font,
+                context.centeredText(this.font,
                         timeOrZero((int) progress[0]) + " / " + timeOrZero((int) progress[1]),
                         this.width / 2, barTop - 10, 0xFFFFFF);
             } else if (this.hintY >= this.listTop + ROW_H) {
-                context.drawString(this.font,
+                context.text(this.font,
                         Component.translatable("screen.explainstone.list.hint", tracks.size()), this.left, this.hintY, 0x909090);
             }
         }
 
         if (transmitter || receive) {
-            context.drawString(this.font, Component.translatable("screen.explainstone.label.frequency"),
+            context.text(this.font, Component.translatable("screen.explainstone.label.frequency"),
                     this.left + 6, this.channelY + 5, 0xFFFFFF);
         }
 
@@ -538,7 +538,10 @@ public class SpeakerScreen extends Screen {
     }
 
     @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+    public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
+        double mouseX = event.x();
+        double mouseY = event.y();
+        int button = event.button();
         SpeakerBlockEntity be = this.speaker();
         boolean receive = !this.isTransmitter() && be != null && be.isReceiveMode();
         if (!receive && button == 0 && mouseX >= this.left && mouseX <= this.left + this.panelW
@@ -549,7 +552,7 @@ public class SpeakerScreen extends Screen {
                 return true;
             }
         }
-        return super.mouseClicked(mouseX, mouseY, button);
+        return super.mouseClicked(event, doubleClick);
     }
 
     @Override
@@ -638,7 +641,7 @@ public class SpeakerScreen extends Screen {
 
     private void info(Minecraft client, Component text) {
         if (client.player != null) {
-            client.player.displayClientMessage(Component.translatable("message.explainstone.prefix", this.blockName(), text), false);
+            client.player.sendSystemMessage(Component.translatable("message.explainstone.prefix", this.blockName(), text));
         }
     }
 

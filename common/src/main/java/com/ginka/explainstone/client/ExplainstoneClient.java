@@ -35,12 +35,12 @@ public final class ExplainstoneClient {
     }
 
     public static boolean openSpeakerScreen(Level level, BlockPos pos) {
-        if (!level.isClientSide) {
+        if (!level.isClientSide()) {
             return false;
         }
         Block block = level.getBlockState(pos).getBlock();
         if (block instanceof SpeakerBlock || block instanceof BroadcastTransmitterBlock) {
-            Minecraft.getInstance().setScreen(new SpeakerScreen(pos));
+            Minecraft.getInstance().setScreenAndShow(new SpeakerScreen(pos));
             return true;
         }
         return false;

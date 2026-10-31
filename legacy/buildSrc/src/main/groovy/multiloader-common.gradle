@@ -1,0 +1,46 @@
+plugins {
+	id 'java-library'
+	id 'maven-publish'
+}
+
+base {
+	archivesName = "${mod_id}-${project.name}-${minecraft_version}"
+}
+
+java {
+	toolchain.languageVersion = JavaLanguageVersion.of(java_version)
+	withSourcesJar()
+}
+
+repositories {
+	mavenCentral()
+}
+
+jar {
+	from(rootProject.file('LICENSE')) {
+		rename { "${it}_${mod_name}" }
+	}
+}
+
+def expandProps = [
+		version: version,
+		minecraft_version: minecraft_version,
+		minecraft_version_range: minecraft_version_range,
+		fabric_version: fabric_version,
+		fabric_loader_version: fabric_loader_version,
+		neoforge_version: neoforge_version,
+		neoforge_loader_version_range: neoforge_loader_version_range,
+		mod_id: mod_id,
+		mod_name: mod_name,
+		mod_author: mod_author,
+		license: license,
+		description: project.property('description'),
+		java_version: java_version
+]
+
+processResources {
+	inputs.properties(expandProps)
+	filesMatching(['fabric.mod.json', 'META-INF/mods.toml', 'META-INF/neoforge.mods.toml']) {
+		expand(expandProps)
+	}
+}

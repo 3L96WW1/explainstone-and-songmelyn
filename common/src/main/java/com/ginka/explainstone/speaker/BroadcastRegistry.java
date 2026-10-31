@@ -110,7 +110,7 @@ public final class BroadcastRegistry {
     }
 
     public static void onJoin(ServerPlayer player) {
-        ServerLevel level = player.serverLevel();
+        ServerLevel level = player.level();
         Map<BlockPos, Entry> map = ACTIVE.get(level.dimension());
         if (map == null) {
             return;

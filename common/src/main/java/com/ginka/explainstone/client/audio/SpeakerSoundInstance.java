@@ -8,14 +8,14 @@
 package com.ginka.explainstone.client.audio;
 
 import com.ginka.explainstone.speaker.Track;
-import net.minecraft.Util;
+import net.minecraft.util.Util;
 import net.minecraft.client.resources.sounds.AbstractSoundInstance;
 import net.minecraft.client.resources.sounds.SoundInstance;
 import net.minecraft.client.resources.sounds.TickableSoundInstance;
 import net.minecraft.client.sounds.AudioStream;
 import net.minecraft.client.sounds.JOrbisAudioStream;
 import net.minecraft.core.BlockPos;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.sounds.SoundSource;
 
 import javax.sound.sampled.AudioFormat;
@@ -30,7 +30,7 @@ import java.util.concurrent.CompletionException;
  * the platform's custom-stream hook to {@link #openStream()}.
  */
 public abstract class SpeakerSoundInstance extends AbstractSoundInstance implements TickableSoundInstance {
-    public static final ResourceLocation SOUND_ID = ResourceLocation.fromNamespaceAndPath("explainstone", "speaker_music");
+    public static final Identifier SOUND_ID = Identifier.fromNamespaceAndPath("explainstone", "speaker_music");
 
     private final Track track;
     private final double startOffsetSeconds;

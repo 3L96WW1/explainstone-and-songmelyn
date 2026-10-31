@@ -13,8 +13,6 @@ import com.ginka.explainstone.ModBlocks;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
-import net.minecraft.nbt.Tag;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
@@ -22,6 +20,8 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -201,75 +201,56 @@ public class SpeakerBlockEntity extends BlockEntity {
 
     public void sync() {
         this.setChanged();
-        if (this.level != null && !this.level.isClientSide) {
+        if (this.level != null && !this.level.isClientSide()) {
             BlockState state = this.getBlockState();
             this.level.sendBlockUpdated(this.worldPosition, state, state, Block.UPDATE_ALL);
         }
     }
 
     @Override
-    protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
-        super.saveAdditional(tag, registries);
-        ListTag list = new ListTag();
+    protected void saveAdditional(ValueOutput out) {
+        super.saveAdditional(out);
+        ValueOutput.ValueOutputList list = out.childrenList("tracks");
         for (Track track : this.tracks) {
-            list.add(track.toNbt());
+            track.toNbt(list.addChild());
         }
-        tag.put("tracks", list);
-        tag.putInt("selected", this.selected);
-        tag.putString("mode", this.mode.getSerializedName());
-        tag.putBoolean("respectRedstone", this.respectRedstone);
-        tag.putBoolean("lastPowered", this.lastPowered);
-        tag.putInt("channel", this.channel);
-        tag.putBoolean("receiveMode", this.receiveMode);
-        tag.putInt("timerSeconds", this.timerSeconds);
-        tag.putBoolean("speakerEnabled", this.speakerEnabled);
-        tag.putInt("transmitRange", this.transmitRange);
-        tag.putInt("audibleRange", this.audibleRange);
-        tag.putInt("volume", this.volume);
+        out.putInt("selected", this.selected);
+        out.putString("mode", this.mode.getSerializedName());
+        out.putBoolean("respectRedstone", this.respectRedstone);
+        out.putBoolean("lastPowered", this.lastPowered);
+        out.putInt("channel", this.channel);
+        out.putBoolean("receiveMode", this.receiveMode);
+        out.putInt("timerSeconds", this.timerSeconds);
+        out.putBoolean("speakerEnabled", this.speakerEnabled);
+        out.putInt("transmitRange", this.transmitRange);
+        out.putInt("audibleRange", this.audibleRange);
+        out.putInt("volume", this.volume);
     }
 
     @Override
-    protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
-        super.loadAdditional(tag, registries);
+    protected void loadAdditional(ValueInput in) {
+        super.loadAdditional(in);
         this.tracks.clear();
-        ListTag list = tag.getList("tracks", Tag.TAG_COMPOUND);
-        for (int i = 0; i < list.size(); i++) {
-            this.tracks.add(Track.fromNbt(list.getCompound(i)));
+        for (ValueInput child : in.childrenListOrEmpty("tracks")) {
+            this.tracks.add(Track.fromNbt(child));
         }
         this.tracks.removeIf(track -> !resolvable(track));
-        this.selected = tag.getInt("selected");
+        this.selected = in.getIntOr("selected", this.selected);
+        String mode = in.getStringOr("mode", this.mode.getSerializedName());
         for (PlayMode value : PlayMode.values()) {
-            if (value.getSerializedName().equals(tag.getString("mode"))) {
+            if (value.getSerializedName().equals(mode)) {
                 this.mode = value;
             }
         }
-        if (tag.contains("respectRedstone")) {
-            this.respectRedstone = tag.getBoolean("respectRedstone");
-        }
-        if (tag.contains("lastPowered")) {
-            this.lastPowered = tag.getBoolean("lastPowered");
-        }
-        if (tag.contains("channel")) {
-            this.channel = Math.floorMod(tag.getInt("channel"), 1000);
-        }
-        if (tag.contains("receiveMode")) {
-            this.receiveMode = tag.getBoolean("receiveMode");
-        }
-        if (tag.contains("timerSeconds")) {
-            this.timerSeconds = Math.max(0, tag.getInt("timerSeconds"));
-        }
-        if (tag.contains("speakerEnabled")) {
-            this.speakerEnabled = tag.getBoolean("speakerEnabled");
-        }
-        if (tag.contains("transmitRange")) {
-            this.transmitRange = Math.max(32, Math.min(512, tag.getInt("transmitRange")));
-        }
-        if (tag.contains("volume")) {
-            this.volume = Math.max(0, Math.min(100, tag.getInt("volume")));
-        }
-        if (tag.contains("audibleRange")) {
-            this.audibleRange = Math.max(8, Math.min(48, tag.getInt("audibleRange")));
-        }
+        this.respectRedstone = in.getBooleanOr("respectRedstone", this.respectRedstone);
+        this.lastPowered = in.getBooleanOr("lastPowered", this.lastPowered);
+        this.channel = Math.floorMod(in.getIntOr("channel", this.channel), 1000);
+        this.receiveMode = in.getBooleanOr("receiveMode", this.receiveMode);
+        this.timerSeconds = Math.max(0, in.getIntOr("timerSeconds", this.timerSeconds));
+        this.speakerEnabled = in.getBooleanOr("speakerEnabled", this.speakerEnabled);
+        this.transmitRange = Math.max(32, Math.min(512, in.getIntOr("transmitRange", this.transmitRange)));
+        this.volume = Math.max(0, Math.min(100, in.getIntOr("volume", this.volume)));
+        this.audibleRange = Math.max(8, Math.min(48, in.getIntOr("audibleRange", this.audibleRange)));
     }
 
     private static boolean resolvable(Track track) {

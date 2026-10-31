@@ -102,7 +102,7 @@ public final class SpeakerAudioCache {
 
     private static void message(Minecraft client, Component text) {
         if (client.player != null) {
-            client.player.displayClientMessage(text, false);
+            client.player.sendSystemMessage(text);
         }
     }
 

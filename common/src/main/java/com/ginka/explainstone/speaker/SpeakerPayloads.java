@@ -14,7 +14,7 @@ import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 /** 讲解石界面的所有自定义网络包。 */
 public final class SpeakerPayloads {
@@ -40,7 +40,7 @@ public final class SpeakerPayloads {
 
     public record Action(BlockPos pos, int action, int value) implements CustomPacketPayload {
         public static final CustomPacketPayload.Type<Action> ID = new CustomPacketPayload.Type<>(
-                ResourceLocation.fromNamespaceAndPath("explainstone", "speaker_action"));
+                Identifier.fromNamespaceAndPath("explainstone", "speaker_action"));
         public static final StreamCodec<RegistryFriendlyByteBuf, Action> CODEC = StreamCodec.composite(
                 BlockPos.STREAM_CODEC, Action::pos,
                 ByteBufCodecs.VAR_INT, Action::action,
@@ -56,7 +56,7 @@ public final class SpeakerPayloads {
     public record ImportChunk(BlockPos pos, String label, String sha1, int index, int total, byte[] data)
             implements CustomPacketPayload {
         public static final CustomPacketPayload.Type<ImportChunk> ID = new CustomPacketPayload.Type<>(
-                ResourceLocation.fromNamespaceAndPath("explainstone", "speaker_import"));
+                Identifier.fromNamespaceAndPath("explainstone", "speaker_import"));
         public static final StreamCodec<RegistryFriendlyByteBuf, ImportChunk> CODEC = StreamCodec.composite(
                 BlockPos.STREAM_CODEC, ImportChunk::pos,
                 ByteBufCodecs.STRING_UTF8, ImportChunk::label,
@@ -74,7 +74,7 @@ public final class SpeakerPayloads {
 
     public record RequestAudio(String sha1) implements CustomPacketPayload {
         public static final CustomPacketPayload.Type<RequestAudio> ID = new CustomPacketPayload.Type<>(
-                ResourceLocation.fromNamespaceAndPath("explainstone", "speaker_request"));
+                Identifier.fromNamespaceAndPath("explainstone", "speaker_request"));
         public static final StreamCodec<RegistryFriendlyByteBuf, RequestAudio> CODEC = StreamCodec.composite(
                 ByteBufCodecs.STRING_UTF8, RequestAudio::sha1,
                 RequestAudio::new);
@@ -87,7 +87,7 @@ public final class SpeakerPayloads {
 
     public record Resync() implements CustomPacketPayload {
         public static final CustomPacketPayload.Type<Resync> ID = new CustomPacketPayload.Type<>(
-                ResourceLocation.fromNamespaceAndPath("explainstone", "speaker_resync"));
+                Identifier.fromNamespaceAndPath("explainstone", "speaker_resync"));
         public static final StreamCodec<RegistryFriendlyByteBuf, Resync> CODEC = StreamCodec.unit(new Resync());
 
         @Override
@@ -100,7 +100,7 @@ public final class SpeakerPayloads {
                             long session, int elapsedSeconds)
             implements CustomPacketPayload {
         public static final CustomPacketPayload.Type<Broadcast> ID = new CustomPacketPayload.Type<>(
-                ResourceLocation.fromNamespaceAndPath("explainstone", "speaker_broadcast"));
+                Identifier.fromNamespaceAndPath("explainstone", "speaker_broadcast"));
         public static final StreamCodec<RegistryFriendlyByteBuf, Broadcast> CODEC = StreamCodec.of(
                 (buffer, value) -> {
                     buffer.writeVarInt(value.channel());
@@ -129,7 +129,7 @@ public final class SpeakerPayloads {
     public record AudioChunk(String sha1, String label, int index, int total, byte[] data)
             implements CustomPacketPayload {
         public static final CustomPacketPayload.Type<AudioChunk> ID = new CustomPacketPayload.Type<>(
-                ResourceLocation.fromNamespaceAndPath("explainstone", "speaker_audio"));
+                Identifier.fromNamespaceAndPath("explainstone", "speaker_audio"));
         public static final StreamCodec<RegistryFriendlyByteBuf, AudioChunk> CODEC = StreamCodec.composite(
                 ByteBufCodecs.STRING_UTF8, AudioChunk::sha1,
                 ByteBufCodecs.STRING_UTF8, AudioChunk::label,

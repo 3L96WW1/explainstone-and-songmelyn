@@ -18,6 +18,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.permissions.Permissions;
 import net.minecraft.world.level.storage.LevelResource;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
@@ -60,8 +61,8 @@ public final class SpeakerNetworking {
         boolean broadcasting = payload.action() == SpeakerPayloads.ACTION_PLAY
                 || payload.action() == SpeakerPayloads.ACTION_PLAY_INDEX;
         if (isTransmitter && broadcasting && ExplainstoneConfig.broadcastRequiresOp()
-                && !player.hasPermissions(2)) {
-            player.displayClientMessage(Component.translatable("message.explainstone.broadcast.no_permission"), false);
+                && !player.permissions().hasPermission(Permissions.COMMANDS_GAMEMASTER)) {
+            player.sendSystemMessage(Component.translatable("message.explainstone.broadcast.no_permission"));
             return;
         }
 
@@ -122,7 +123,7 @@ public final class SpeakerNetworking {
         buffer.writeBytes(payload.data());
         if (buffer.size() > MAX_FILE_BYTES) {
             UPLOADS.remove(key);
-            player.displayClientMessage(Component.translatable("message.explainstone.import.too_large"), false);
+            player.sendSystemMessage(Component.translatable("message.explainstone.import.too_large"));
             return;
         }
         if (payload.index() + 1 < payload.total()) {
@@ -132,12 +133,12 @@ public final class SpeakerNetworking {
         UPLOADS.remove(key);
         byte[] bytes = buffer.toByteArray();
         if (!isOgg(bytes)) {
-            player.displayClientMessage(Component.translatable("message.explainstone.import.not_ogg"), false);
+            player.sendSystemMessage(Component.translatable("message.explainstone.import.not_ogg"));
             return;
         }
         int seconds = oggSeconds(bytes);
         if (seconds > MAX_SECONDS) {
-            player.displayClientMessage(Component.translatable("message.explainstone.import.too_long"), false);
+            player.sendSystemMessage(Component.translatable("message.explainstone.import.too_long"));
             return;
         }
         try {
@@ -145,7 +146,7 @@ public final class SpeakerNetworking {
             Files.createDirectories(dir);
             Files.write(dir.resolve(payload.sha1() + ".ogg"), bytes);
         } catch (IOException e) {
-            player.displayClientMessage(Component.translatable("message.explainstone.import.failed"), false);
+            player.sendSystemMessage(Component.translatable("message.explainstone.import.failed"));
             return;
         }
 
@@ -155,7 +156,7 @@ public final class SpeakerNetworking {
                 be.addTrack(track);
             }
         }
-        player.displayClientMessage(Component.translatable("message.explainstone.import.ok", payload.label()), true);
+        player.sendOverlayMessage(Component.translatable("message.explainstone.import.ok", payload.label()));
     }
 
     private static int oggSeconds(byte[] data) {
@@ -196,7 +197,7 @@ public final class SpeakerNetworking {
         if (sha1.isEmpty() || sha1.length() > 64) {
             return;
         }
-        Path file = audioDir(player.serverLevel().getServer()).resolve(sha1 + ".ogg");
+        Path file = audioDir(player.level().getServer()).resolve(sha1 + ".ogg");
         if (!Files.isRegularFile(file)) {
             return;
         }

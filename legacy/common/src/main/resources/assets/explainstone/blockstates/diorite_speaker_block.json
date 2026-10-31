@@ -1,0 +1,34 @@
+{
+  "variants": {
+    "facing=north,playing=false": {
+      "model": "explainstone:block/diorite_speaker_block"
+    },
+    "facing=north,playing=true": {
+      "model": "explainstone:block/diorite_speaker_block"
+    },
+    "facing=east,playing=false": {
+      "model": "explainstone:block/diorite_speaker_block",
+      "y": 90
+    },
+    "facing=east,playing=true": {
+      "model": "explainstone:block/diorite_speaker_block",
+      "y": 90
+    },
+    "facing=south,playing=false": {
+      "model": "explainstone:block/diorite_speaker_block",
+      "y": 180
+    },
+    "facing=south,playing=true": {
+      "model": "explainstone:block/diorite_speaker_block",
+      "y": 180
+    },
+    "facing=west,playing=false": {
+      "model": "explainstone:block/diorite_speaker_block",
+      "y": 270
+    },
+    "facing=west,playing=true": {
+      "model": "explainstone:block/diorite_speaker_block",
+      "y": 270
+    }
+  }
+}

@@ -25,17 +25,18 @@ import net.minecraft.world.level.block.entity.BlockEntityTicker;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.redstone.Orientation;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
-import net.minecraft.world.level.block.state.properties.DirectionProperty;
+import net.minecraft.world.level.block.state.properties.EnumProperty;
 import net.minecraft.world.phys.BlockHitResult;
 import org.jetbrains.annotations.Nullable;
 
 /** 广播发信器：把选中的音乐以某个频道播出去，收信模式的讲解石会自动收听。 */
 public class BroadcastTransmitterBlock extends Block implements EntityBlock {
     public static final BooleanProperty PLAYING = BooleanProperty.create("broadcasting");
-    public static final DirectionProperty FACING = BlockStateProperties.HORIZONTAL_FACING;
+    public static final EnumProperty<Direction> FACING = BlockStateProperties.HORIZONTAL_FACING;
     private static int beaconTick;
 
     public BroadcastTransmitterBlock(BlockBehaviour.Properties properties) {
@@ -63,13 +64,13 @@ public class BroadcastTransmitterBlock extends Block implements EntityBlock {
 
     @Override
     protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hit) {
-        return level.isClientSide ? InteractionResult.SUCCESS : InteractionResult.CONSUME;
+        return level.isClientSide() ? InteractionResult.SUCCESS : InteractionResult.CONSUME;
     }
 
     @Override
-    protected void neighborChanged(BlockState state, Level level, BlockPos pos, Block sourceBlock, BlockPos sourcePos,
-                                   boolean isMoving) {
-        if (!level.isClientSide && level.getBlockEntity(pos) instanceof SpeakerBlockEntity be) {
+    protected void neighborChanged(BlockState state, Level level, BlockPos pos, Block sourceBlock,
+                                   Orientation orientation, boolean isMoving) {
+        if (!level.isClientSide() && level.getBlockEntity(pos) instanceof SpeakerBlockEntity be) {
             boolean powered = level.hasNeighborSignal(pos);
             boolean edge = powered != be.isLastPowered();
             be.setLastPowered(powered);
@@ -87,15 +88,13 @@ public class BroadcastTransmitterBlock extends Block implements EntityBlock {
                 }
             }
         }
-        super.neighborChanged(state, level, pos, sourceBlock, sourcePos, isMoving);
+        super.neighborChanged(state, level, pos, sourceBlock, orientation, isMoving);
     }
 
     @Override
-    protected void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean isMoving) {
-        if (!level.isClientSide && !state.is(newState.getBlock()) && level instanceof ServerLevel serverLevel) {
-            BroadcastRegistry.forget(serverLevel, pos);
-        }
-        super.onRemove(state, level, pos, newState, isMoving);
+    protected void affectNeighborsAfterRemoval(BlockState state, ServerLevel level, BlockPos pos, boolean isMoving) {
+        BroadcastRegistry.forget(level, pos);
+        super.affectNeighborsAfterRemoval(state, level, pos, isMoving);
     }
 
     @Override
@@ -104,14 +103,14 @@ public class BroadcastTransmitterBlock extends Block implements EntityBlock {
     }
 
     @Override
-    protected int getAnalogOutputSignal(BlockState state, Level level, BlockPos pos) {
+    protected int getAnalogOutputSignal(BlockState state, Level level, BlockPos pos, Direction direction) {
         return state.getValue(PLAYING) ? 15 : 0;
     }
 
     @Nullable
     @Override
     public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> type) {
-        if (level.isClientSide) {
+        if (level.isClientSide()) {
             return null;
         }
         return (tickLevel, pos, tickState, blockEntity) -> {

@@ -21,10 +21,11 @@ import net.minecraft.world.level.block.EntityBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.redstone.Orientation;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
-import net.minecraft.world.level.block.state.properties.DirectionProperty;
+import net.minecraft.world.level.block.state.properties.EnumProperty;
 import net.minecraft.world.phys.BlockHitResult;
 import org.jetbrains.annotations.Nullable;
 
@@ -32,7 +33,7 @@ public class SpeakerBlock extends Block implements EntityBlock {
     /** 是否正在播放（红石触发或界面按钮都会改它） */
     public static final BooleanProperty PLAYING = BooleanProperty.create("playing");
     /** 网罩朝向（模型正面朝北，放置时朝向玩家） */
-    public static final DirectionProperty FACING = BlockStateProperties.HORIZONTAL_FACING;
+    public static final EnumProperty<Direction> FACING = BlockStateProperties.HORIZONTAL_FACING;
 
     public SpeakerBlock(BlockBehaviour.Properties properties) {
         super(properties);
@@ -60,13 +61,13 @@ public class SpeakerBlock extends Block implements EntityBlock {
     @Override
     protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hit) {
         // 界面由客户端打开，这里只需要吃掉这次交互
-        return level.isClientSide ? InteractionResult.SUCCESS : InteractionResult.CONSUME;
+        return level.isClientSide() ? InteractionResult.SUCCESS : InteractionResult.CONSUME;
     }
 
     @Override
-    protected void neighborChanged(BlockState state, Level level, BlockPos pos, Block sourceBlock, BlockPos sourcePos,
-                                   boolean isMoving) {
-        if (!level.isClientSide && level.getBlockEntity(pos) instanceof SpeakerBlockEntity be
+    protected void neighborChanged(BlockState state, Level level, BlockPos pos, Block sourceBlock,
+                                   Orientation orientation, boolean isMoving) {
+        if (!level.isClientSide() && level.getBlockEntity(pos) instanceof SpeakerBlockEntity be
                 && !be.isReceiveMode()) {
             boolean powered = level.hasNeighborSignal(pos);
             boolean edge = powered != be.isLastPowered();
@@ -75,7 +76,7 @@ public class SpeakerBlock extends Block implements EntityBlock {
                 level.setBlock(pos, state.setValue(PLAYING, powered), Block.UPDATE_ALL);
             }
         }
-        super.neighborChanged(state, level, pos, sourceBlock, sourcePos, isMoving);
+        super.neighborChanged(state, level, pos, sourceBlock, orientation, isMoving);
     }
 
     @Override
@@ -84,7 +85,7 @@ public class SpeakerBlock extends Block implements EntityBlock {
     }
 
     @Override
-    protected int getAnalogOutputSignal(BlockState state, Level level, BlockPos pos) {
+    protected int getAnalogOutputSignal(BlockState state, Level level, BlockPos pos, Direction direction) {
         return state.getValue(PLAYING) ? 15 : 0;
     }
 }

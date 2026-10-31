@@ -22,12 +22,12 @@ public final class FabricNetwork implements Network {
     }
 
     public static void registerServer() {
-        PayloadTypeRegistry.playC2S().register(SpeakerPayloads.Action.ID, SpeakerPayloads.Action.CODEC);
-        PayloadTypeRegistry.playC2S().register(SpeakerPayloads.ImportChunk.ID, SpeakerPayloads.ImportChunk.CODEC);
-        PayloadTypeRegistry.playC2S().register(SpeakerPayloads.RequestAudio.ID, SpeakerPayloads.RequestAudio.CODEC);
-        PayloadTypeRegistry.playC2S().register(SpeakerPayloads.Resync.ID, SpeakerPayloads.Resync.CODEC);
-        PayloadTypeRegistry.playS2C().register(SpeakerPayloads.AudioChunk.ID, SpeakerPayloads.AudioChunk.CODEC);
-        PayloadTypeRegistry.playS2C().register(SpeakerPayloads.Broadcast.ID, SpeakerPayloads.Broadcast.CODEC);
+        PayloadTypeRegistry.serverboundPlay().register(SpeakerPayloads.Action.ID, SpeakerPayloads.Action.CODEC);
+        PayloadTypeRegistry.serverboundPlay().register(SpeakerPayloads.ImportChunk.ID, SpeakerPayloads.ImportChunk.CODEC);
+        PayloadTypeRegistry.serverboundPlay().register(SpeakerPayloads.RequestAudio.ID, SpeakerPayloads.RequestAudio.CODEC);
+        PayloadTypeRegistry.serverboundPlay().register(SpeakerPayloads.Resync.ID, SpeakerPayloads.Resync.CODEC);
+        PayloadTypeRegistry.clientboundPlay().register(SpeakerPayloads.AudioChunk.ID, SpeakerPayloads.AudioChunk.CODEC);
+        PayloadTypeRegistry.clientboundPlay().register(SpeakerPayloads.Broadcast.ID, SpeakerPayloads.Broadcast.CODEC);
 
         ServerPlayNetworking.registerGlobalReceiver(SpeakerPayloads.Action.ID,
                 (payload, context) -> context.server().execute(() ->

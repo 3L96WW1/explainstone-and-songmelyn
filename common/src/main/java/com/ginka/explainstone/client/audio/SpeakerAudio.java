@@ -273,7 +273,7 @@ public final class SpeakerAudio {
     }
 
     private static void spawnNotes(ClientLevel world, BlockPos pos) {
-        var random = world.random;
+        var random = world.getRandom();
         if (random.nextInt(5) != 0) {
             return;
         }

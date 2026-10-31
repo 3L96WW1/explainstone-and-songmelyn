@@ -1,0 +1,6 @@
+{
+  "model": {
+    "type": "minecraft:model",
+    "model": "explainstone:block/stone_speaker_block"
+  }
+}

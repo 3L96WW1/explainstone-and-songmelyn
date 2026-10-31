@@ -12,7 +12,9 @@ package com.ginka.explainstone;
 import com.ginka.explainstone.speaker.SpeakerBlockEntity;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.ItemLike;
@@ -53,11 +55,11 @@ public final class ModBlocks {
         andesiteSpeakerBlock = registerSpeaker("andesite_speaker_block");
 
         songmelynBlock = Registry.register(BuiltInRegistries.BLOCK, id("songmelyn_block"),
-                new SongmelynBlock(BlockBehaviour.Properties.of().strength(1.05f).noOcclusion()));
+                new SongmelynBlock(blockProps("songmelyn_block").noOcclusion()));
         ALL.add(songmelynBlock);
 
         broadcastTransmitter = Registry.register(BuiltInRegistries.BLOCK, id("broadcast_transmitter"),
-                new BroadcastTransmitterBlock(BlockBehaviour.Properties.of().strength(1.05f)));
+                new BroadcastTransmitterBlock(blockProps("broadcast_transmitter")));
         ALL.add(broadcastTransmitter);
     }
 
@@ -66,9 +68,14 @@ public final class ModBlocks {
             registerBlocks();
         }
         for (Block block : ALL) {
-            Registry.register(BuiltInRegistries.ITEM,
-                    BuiltInRegistries.BLOCK.getKey(block),
-                    new BlockItem(block, new Item.Properties()));
+            Identifier blockId = BuiltInRegistries.BLOCK.getKey(block);
+            Item item = new BlockItem(block, new Item.Properties()
+                    .setId(itemKey(blockId))
+                    .useBlockDescriptionPrefix());
+            Registry.register(BuiltInRegistries.ITEM, blockId, item);
+            // 原版 Items.registerBlock 会填这张表，模组方块得自己填：Block.asItem() 查不到时返回 AIR，
+            // 于是 new ItemStack(block) 会变成空气（创意栏里什么都看不到）。
+            Item.BY_BLOCK.put(block, item);
         }
     }
 
@@ -84,12 +91,26 @@ public final class ModBlocks {
 
     private static Block registerSpeaker(String name) {
         Block block = Registry.register(BuiltInRegistries.BLOCK, id(name),
-                new SpeakerBlock(BlockBehaviour.Properties.of().strength(1.05f).noOcclusion()));
+                new SpeakerBlock(blockProps(name).noOcclusion()));
         ALL.add(block);
         return block;
     }
 
-    private static ResourceLocation id(String path) {
-        return ResourceLocation.fromNamespaceAndPath(Explainstone.MOD_ID, path);
+    /**
+     * 26.x 起 Block/Item 的 Properties 必须带 id：Block 构造时 effectiveDrops() 会读 id 拿战利品表，
+     * Item 构造时 itemIdOrThrow() 会读 id 注册组件初始化器。缺了就在注册事件里抛 NPE，编译期查不出来。
+     */
+    private static BlockBehaviour.Properties blockProps(String path) {
+        return BlockBehaviour.Properties.of()
+                .strength(1.05f)
+                .setId(ResourceKey.create(Registries.BLOCK, id(path)));
+    }
+
+    private static ResourceKey<Item> itemKey(Identifier blockId) {
+        return ResourceKey.create(Registries.ITEM, blockId);
+    }
+
+    private static Identifier id(String path) {
+        return Identifier.fromNamespaceAndPath(Explainstone.MOD_ID, path);
     }
 }
