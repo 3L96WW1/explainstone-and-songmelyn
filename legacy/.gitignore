@@ -1,0 +1,58 @@
+# gradle
+
+.gradle/
+build/
+out/
+classes/
+
+# eclipse
+
+*.launch
+
+# idea
+
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# vscode
+
+.settings/
+.vscode/
+bin/
+.classpath
+.project
+
+# macos
+
+*.DS_Store
+.DS_Store
+
+# fabric
+
+run/
+
+# java
+
+hs_err_*.log
+replay_*.log
+*.hprof
+*.jfr
+
+# 本地素材/备份（不进仓库也不进 jar）
+audio-src/
+
+# 临时工作目录
+.scratch/
+
+# release workflow 中间产物
+dist/
+
+# 沙箱内的工具链与 Gradle 缓存（不进仓库）
+.toolchain/
+.gradle-home/
+forge-1.20.1/
+
+# 1.20.1 分支的 worktree
+fabric-1.20.1/

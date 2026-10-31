@@ -48,6 +48,7 @@ audio-src/
 
 # release workflow 中间产物
 dist/
+dist-legacy/
 
 # 沙箱内的工具链与 Gradle 缓存（不进仓库）
 .toolchain/

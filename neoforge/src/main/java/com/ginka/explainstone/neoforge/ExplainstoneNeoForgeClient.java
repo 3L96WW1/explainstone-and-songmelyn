@@ -19,7 +19,7 @@ import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 
 @EventBusSubscriber(modid = Explainstone.MOD_ID, value = Dist.CLIENT)
 public final class ExplainstoneNeoForgeClient {
-    @EventBusSubscriber(modid = Explainstone.MOD_ID, value = Dist.CLIENT, bus = EventBusSubscriber.Bus.MOD)
+    @EventBusSubscriber(modid = Explainstone.MOD_ID, value = Dist.CLIENT)
     public static final class ClientModEvents {
         @SubscribeEvent
         public static void onClientSetup(FMLClientSetupEvent event) {

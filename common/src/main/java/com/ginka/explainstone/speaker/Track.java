@@ -9,7 +9,8 @@
  */
 package com.ginka.explainstone.speaker;
 
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 
 /**
  * 播放列表里的一条曲目。
@@ -42,14 +43,12 @@ public record Track(String label, String id) {
         return i < 0 ? this.id : this.id.substring(i + 1);
     }
 
-    public CompoundTag toNbt() {
-        CompoundTag nbt = new CompoundTag();
-        nbt.putString("label", this.label);
-        nbt.putString("id", this.id);
-        return nbt;
+    public void toNbt(ValueOutput out) {
+        out.putString("label", this.label);
+        out.putString("id", this.id);
     }
 
-    public static Track fromNbt(CompoundTag nbt) {
-        return new Track(nbt.getString("label"), nbt.getString("id"));
+    public static Track fromNbt(ValueInput in) {
+        return new Track(in.getStringOr("label", ""), in.getStringOr("id", ""));
     }
 }

@@ -9,11 +9,11 @@ import com.ginka.explainstone.Explainstone;
 import com.ginka.explainstone.ModBlocks;
 import com.ginka.explainstone.speaker.SpeakerBlockEntity;
 import net.fabricmc.api.ModInitializer;
-import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
+import net.fabricmc.fabric.api.creativetab.v1.CreativeModeTabEvents;
 import net.fabricmc.fabric.api.object.builder.v1.block.entity.FabricBlockEntityTypeBuilder;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
@@ -28,11 +28,11 @@ public final class ExplainstoneFabric implements ModInitializer {
         ModBlocks.speakerBlockEntity = FabricBlockEntityTypeBuilder.create(
                 SpeakerBlockEntity::new, ModBlocks.allBlocks().toArray(Block[]::new)).build();
         Registry.register(BuiltInRegistries.BLOCK_ENTITY_TYPE,
-                ResourceLocation.fromNamespaceAndPath(Explainstone.MOD_ID, "speaker_block"),
+                Identifier.fromNamespaceAndPath(Explainstone.MOD_ID, "speaker_block"),
                 ModBlocks.speakerBlockEntity);
 
         FabricNetwork.registerServer();
-        ItemGroupEvents.modifyEntriesEvent(CreativeModeTabs.REDSTONE_BLOCKS)
-                .register(entries -> ModBlocks.allBlocks().forEach(block -> entries.accept(new ItemStack(block))));
+        CreativeModeTabEvents.modifyOutputEvent(CreativeModeTabs.REDSTONE_BLOCKS)
+                .register(output -> ModBlocks.allBlocks().forEach(block -> output.accept(new ItemStack(block))));
     }
 }

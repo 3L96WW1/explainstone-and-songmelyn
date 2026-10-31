@@ -7,9 +7,49 @@ on:
 permissions:
   contents: write
 
+env:
+  GRADLE_OPTS: -Dorg.gradle.daemon=false
+
 jobs:
-  release:
+  # 26.1.x 和 26.2 各编译一次，共用同一份源码
+  build:
     runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        mcLine: ['26.1', '26.2']
+    steps:
+      - name: checkout repository
+        uses: actions/checkout@v6
+      - name: validate gradle wrapper
+        uses: gradle/actions/wrapper-validation@v6
+      - name: setup jdk
+        uses: actions/setup-java@v5
+        with:
+          java-version: '25'
+          distribution: 'microsoft'
+      - name: setup gradle
+        uses: gradle/actions/setup-gradle@v5
+      - name: build ${{ matrix.mcLine }}
+        run: ./gradlew build -PmcLine=${{ matrix.mcLine }}
+      - name: collect mod jar
+        run: |
+          mkdir -p dist
+          cp fabric/build/libs/*.jar dist/ || true
+          cp neoforge/build/libs/*.jar dist/ || true
+          rm -f dist/*-sources.jar
+      - name: upload jars
+        uses: actions/upload-artifact@v7
+        with:
+          name: jars-${{ matrix.mcLine }}
+          path: dist/*.jar
+          retention-days: 1
+
+  build-legacy:
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: legacy
     steps:
       - name: checkout repository
         uses: actions/checkout@v6
@@ -20,17 +60,35 @@ jobs:
         with:
           java-version: '21'
           distribution: 'microsoft'
-      - name: make gradle wrapper executable
-        run: chmod +x ./gradlew
-      - name: build
+      - name: setup gradle
+        uses: gradle/actions/setup-gradle@v5
+      - name: build 1.21
         run: ./gradlew build
       - name: collect mod jar
         run: |
-          mkdir -p dist
-          cp fabric/build/libs/*.jar dist/ || true
-          cp neoforge/build/libs/*.jar dist/ || true
-          rm -f dist/*-sources.jar
-          ls -l dist
+          mkdir -p ../dist-legacy
+          cp fabric/build/libs/*.jar ../dist-legacy/ || true
+          cp neoforge/build/libs/*.jar ../dist-legacy/ || true
+          rm -f ../dist-legacy/*-sources.jar
+      - name: upload jars
+        uses: actions/upload-artifact@v7
+        with:
+          name: jars-1.21
+          path: dist-legacy/*.jar
+          retention-days: 1
+
+  release:
+    needs: [build, build-legacy]
+    runs-on: ubuntu-24.04
+    steps:
+      - name: checkout repository
+        uses: actions/checkout@v6
+      - name: download all jars
+        uses: actions/download-artifact@v6
+        with:
+          path: dist
+          merge-multiple: true
+      - run: ls -l dist
       - name: create release
         uses: softprops/action-gh-release@v2
         with:

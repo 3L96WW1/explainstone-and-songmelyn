@@ -1,0 +1,34 @@
+{
+  "variants": {
+    "facing=north,broadcasting=false": {
+      "model": "explainstone:block/broadcast_transmitter"
+    },
+    "facing=north,broadcasting=true": {
+      "model": "explainstone:block/broadcast_transmitter"
+    },
+    "facing=east,broadcasting=false": {
+      "model": "explainstone:block/broadcast_transmitter",
+      "y": 90
+    },
+    "facing=east,broadcasting=true": {
+      "model": "explainstone:block/broadcast_transmitter",
+      "y": 90
+    },
+    "facing=south,broadcasting=false": {
+      "model": "explainstone:block/broadcast_transmitter",
+      "y": 180
+    },
+    "facing=south,broadcasting=true": {
+      "model": "explainstone:block/broadcast_transmitter",
+      "y": 180
+    },
+    "facing=west,broadcasting=false": {
+      "model": "explainstone:block/broadcast_transmitter",
+      "y": 270
+    },
+    "facing=west,broadcasting=true": {
+      "model": "explainstone:block/broadcast_transmitter",
+      "y": 270
+    }
+  }
+}

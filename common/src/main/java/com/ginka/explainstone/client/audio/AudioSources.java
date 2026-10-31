@@ -14,7 +14,7 @@ package com.ginka.explainstone.client.audio;
 
 import com.ginka.explainstone.Explainstone;
 import com.ginka.explainstone.speaker.Track;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -134,7 +134,7 @@ public final class AudioSources {
         }
     }
 
-    public static ResourceLocation builtinId(String name) {
-        return ResourceLocation.fromNamespaceAndPath("explainstone", name);
+    public static Identifier builtinId(String name) {
+        return Identifier.fromNamespaceAndPath("explainstone", name);
     }
 }
