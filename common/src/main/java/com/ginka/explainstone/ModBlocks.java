@@ -69,8 +69,13 @@ public final class ModBlocks {
         }
         for (Block block : ALL) {
             Identifier blockId = BuiltInRegistries.BLOCK.getKey(block);
-            Registry.register(BuiltInRegistries.ITEM, blockId,
-                    new BlockItem(block, new Item.Properties().setId(itemKey(blockId))));
+            Item item = new BlockItem(block, new Item.Properties()
+                    .setId(itemKey(blockId))
+                    .useBlockDescriptionPrefix());
+            Registry.register(BuiltInRegistries.ITEM, blockId, item);
+            // 原版 Items.registerBlock 会填这张表，模组方块得自己填：Block.asItem() 查不到时返回 AIR，
+            // 于是 new ItemStack(block) 会变成空气（创意栏里什么都看不到）。
+            Item.BY_BLOCK.put(block, item);
         }
     }
 
