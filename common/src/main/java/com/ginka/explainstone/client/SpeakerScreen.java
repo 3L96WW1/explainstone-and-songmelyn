@@ -573,61 +573,109 @@ public class SpeakerScreen extends Screen {
         this.openFileDialog(inbox);
     }
 
+    /**
+     * AWT 的文件选择框建不起来时（Android 没有 java.awt、无头服务器、没显示服务器）返回 false。
+     * 注意不能只看 isHeadless：Linux 上还能有 DISPLAY 但仍然拒绝。
+     */
+    private static boolean fileDialogAvailable() {
+        try {
+            if (java.awt.GraphicsEnvironment.isHeadless()) {
+                return false;
+            }
+            String os = System.getProperty("os.name", "").toLowerCase();
+            if (os.contains("linux") || os.contains("freebsd") || os.contains("unix")) {
+                String display = System.getenv("DISPLAY");
+                String wayland = System.getenv("WAYLAND_DISPLAY");
+                if ((display == null || display.isEmpty()) && (wayland == null || wayland.isEmpty())) {
+                    return false;
+                }
+            }
+            return true;
+        } catch (Throwable t) {
+            return false; // Android 之类根本没有 java.awt
+        }
+    }
+
     private void openFileDialog(Path inbox) {
         Minecraft client = Minecraft.getInstance();
+        if (!fileDialogAvailable()) {
+            this.importFromInbox(client, inbox);
+            return;
+        }
         Thread thread = new Thread(() -> {
-            String chosen = null;
-            boolean failed = false;
-            try {
-                java.awt.FileDialog dialog = new java.awt.FileDialog((java.awt.Frame) null, "选择 ogg 音频",
-                        java.awt.FileDialog.LOAD);
-                dialog.setDirectory(inbox.toString());
-                dialog.setFilenameFilter((dir, name) -> name.toLowerCase().endsWith(".ogg"));
-                dialog.setMultipleMode(false);
-                dialog.setVisible(true);
-                if (dialog.getFile() != null) {
-                    chosen = new File(dialog.getDirectory(), dialog.getFile()).getAbsolutePath();
-                }
-                dialog.dispose();
-            } catch (Throwable t) {
-                failed = true;
-            }
-            if (chosen == null && failed) {
+            // AWT 的对话框必须建在事件分发线程上：在普通线程里 setVisible(true) 会永久阻塞且不抛异常，
+            // 于是 failed 永远是 false，Swing 兜底也永远轮不到。喵
+            java.util.concurrent.CountDownLatch opened = new java.util.concurrent.CountDownLatch(1);
+            java.util.concurrent.atomic.AtomicReference<String> picked = new java.util.concurrent.atomic.AtomicReference<>();
+            java.util.concurrent.atomic.AtomicBoolean settled = new java.util.concurrent.atomic.AtomicBoolean();
+            javax.swing.SwingUtilities.invokeLater(() -> {
+                java.awt.FileDialog dialog = null;
                 try {
-                    final String[] picked = {null};
-                    javax.swing.SwingUtilities.invokeAndWait(() -> {
-                        javax.swing.JFileChooser chooser = new javax.swing.JFileChooser();
-                        chooser.setDialogTitle("选择 ogg 音频");
-                        chooser.setFileFilter(new javax.swing.filechooser.FileNameExtensionFilter("Ogg 音频 (*.ogg)", "ogg"));
-                        chooser.setCurrentDirectory(inbox.toFile());
-                        if (chooser.showOpenDialog(null) == javax.swing.JFileChooser.APPROVE_OPTION
-                                && chooser.getSelectedFile() != null) {
-                            picked[0] = chooser.getSelectedFile().getAbsolutePath();
+                    dialog = new java.awt.FileDialog((java.awt.Frame) null, "选择 ogg 音频",
+                            java.awt.FileDialog.LOAD);
+                    dialog.setDirectory(inbox.toString());
+                    dialog.setFilenameFilter((dir, name) -> name.toLowerCase().endsWith(".ogg"));
+                    dialog.setMultipleMode(false);
+                    final java.awt.FileDialog shown = dialog;
+                    dialog.addWindowListener(new java.awt.event.WindowAdapter() {
+                        @Override
+                        public void windowOpened(java.awt.event.WindowEvent event) {
+                            opened.countDown();
                         }
                     });
-                    chosen = picked[0];
-                } catch (Throwable ignored) {
-                }
-            }
-            final String result = chosen;
-            client.execute(() -> {
-                if (result != null) {
-                    SpeakerAudioCache.importFile(client, this.pos, Path.of(result));
-                    return;
-                }
-                List<Path> files = listInbox(inbox);
-                if (!files.isEmpty()) {
-                    for (Path file : files) {
-                        SpeakerAudioCache.importFile(client, this.pos, file);
+                    dialog.setVisible(true);
+                    if (shown.getFile() != null) {
+                        picked.set(new File(shown.getDirectory(), shown.getFile()).getAbsolutePath());
                     }
-                    info(client, Component.translatable("message.explainstone.import.inbox", files.size()));
-                } else {
-                    info(client, Component.translatable("message.explainstone.import.none", inbox.toString()));
+                } catch (Throwable ignored) {
+                    // 弹不出来就当没选
+                } finally {
+                    opened.countDown();
+                    if (dialog != null) {
+                        dialog.dispose();
+                    }
                 }
+                client.execute(() -> {
+                    if (settled.compareAndSet(false, true)) {
+                        this.finishImport(client, inbox, picked.get());
+                    }
+                });
             });
+            // 窗口 3 秒内没出现就认为这个环境弹不出来，直接走 inbox 兜底喵
+            try {
+                if (!opened.await(3, java.util.concurrent.TimeUnit.SECONDS)) {
+                    client.execute(() -> {
+                        if (settled.compareAndSet(false, true)) {
+                            this.importFromInbox(client, inbox);
+                        }
+                    });
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
         }, "explainstone-file-dialog");
         thread.setDaemon(true);
         thread.start();
+    }
+
+    private void finishImport(Minecraft client, Path inbox, String chosen) {
+        if (chosen != null) {
+            SpeakerAudioCache.importFile(client, this.pos, Path.of(chosen));
+            return;
+        }
+        this.importFromInbox(client, inbox);
+    }
+
+    private void importFromInbox(Minecraft client, Path inbox) {
+        List<Path> files = listInbox(inbox);
+        if (!files.isEmpty()) {
+            for (Path file : files) {
+                SpeakerAudioCache.importFile(client, this.pos, file);
+            }
+            info(client, Component.translatable("message.explainstone.import.inbox", files.size()));
+        } else {
+            info(client, Component.translatable("message.explainstone.import.none", inbox.toString()));
+        }
     }
 
     private static List<Path> listInbox(Path inbox) {
