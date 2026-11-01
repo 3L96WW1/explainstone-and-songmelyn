@@ -17,6 +17,7 @@ import com.ginka.explainstone.Explainstone;
 import com.ginka.explainstone.BroadcastTransmitterBlock;
 import com.ginka.explainstone.SongmelynBlock;
 import com.ginka.explainstone.SpeakerBlock;
+import com.ginka.explainstone.client.audio.AudioFilePicker;
 import com.ginka.explainstone.client.audio.AudioSources;
 import com.ginka.explainstone.client.audio.SpeakerAudio;
 import com.ginka.explainstone.client.audio.SpeakerAudioCache;
@@ -33,7 +34,6 @@ import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.network.chat.Component;
 import net.minecraft.core.BlockPos;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -574,85 +574,14 @@ public class SpeakerScreen extends Screen {
     }
 
     /**
-     * AWT 的文件选择框建不起来时（Android 没有 java.awt、无头服务器、没显示服务器）返回 false。
-     * 注意不能只看 isHeadless：Linux 上还能有 DISPLAY 但仍然拒绝。
+     * 在后台线程里挑一个 ogg：优先用桌面原生的选择器，都不行就退回 inbox 里已有的文件。
+     * 一定要离开渲染线程做，因为弹窗是阻塞的。喵
      */
-    private static boolean fileDialogAvailable() {
-        try {
-            if (java.awt.GraphicsEnvironment.isHeadless()) {
-                return false;
-            }
-            String os = System.getProperty("os.name", "").toLowerCase();
-            if (os.contains("linux") || os.contains("freebsd") || os.contains("unix")) {
-                String display = System.getenv("DISPLAY");
-                String wayland = System.getenv("WAYLAND_DISPLAY");
-                if ((display == null || display.isEmpty()) && (wayland == null || wayland.isEmpty())) {
-                    return false;
-                }
-            }
-            return true;
-        } catch (Throwable t) {
-            return false; // Android 之类根本没有 java.awt
-        }
-    }
-
     private void openFileDialog(Path inbox) {
         Minecraft client = Minecraft.getInstance();
-        if (!fileDialogAvailable()) {
-            this.importFromInbox(client, inbox);
-            return;
-        }
         Thread thread = new Thread(() -> {
-            // AWT 的对话框必须建在事件分发线程上：在普通线程里 setVisible(true) 会永久阻塞且不抛异常，
-            // 于是 failed 永远是 false，Swing 兜底也永远轮不到。喵
-            java.util.concurrent.CountDownLatch opened = new java.util.concurrent.CountDownLatch(1);
-            java.util.concurrent.atomic.AtomicReference<String> picked = new java.util.concurrent.atomic.AtomicReference<>();
-            java.util.concurrent.atomic.AtomicBoolean settled = new java.util.concurrent.atomic.AtomicBoolean();
-            javax.swing.SwingUtilities.invokeLater(() -> {
-                java.awt.FileDialog dialog = null;
-                try {
-                    dialog = new java.awt.FileDialog((java.awt.Frame) null, "选择 ogg 音频",
-                            java.awt.FileDialog.LOAD);
-                    dialog.setDirectory(inbox.toString());
-                    dialog.setFilenameFilter((dir, name) -> name.toLowerCase().endsWith(".ogg"));
-                    dialog.setMultipleMode(false);
-                    final java.awt.FileDialog shown = dialog;
-                    dialog.addWindowListener(new java.awt.event.WindowAdapter() {
-                        @Override
-                        public void windowOpened(java.awt.event.WindowEvent event) {
-                            opened.countDown();
-                        }
-                    });
-                    dialog.setVisible(true);
-                    if (shown.getFile() != null) {
-                        picked.set(new File(shown.getDirectory(), shown.getFile()).getAbsolutePath());
-                    }
-                } catch (Throwable ignored) {
-                    // 弹不出来就当没选
-                } finally {
-                    opened.countDown();
-                    if (dialog != null) {
-                        dialog.dispose();
-                    }
-                }
-                client.execute(() -> {
-                    if (settled.compareAndSet(false, true)) {
-                        this.finishImport(client, inbox, picked.get());
-                    }
-                });
-            });
-            // 窗口 3 秒内没出现就认为这个环境弹不出来，直接走 inbox 兜底喵
-            try {
-                if (!opened.await(3, java.util.concurrent.TimeUnit.SECONDS)) {
-                    client.execute(() -> {
-                        if (settled.compareAndSet(false, true)) {
-                            this.importFromInbox(client, inbox);
-                        }
-                    });
-                }
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
+            String chosen = AudioFilePicker.pick(inbox, "选择 ogg 音频");
+            client.execute(() -> this.finishImport(client, inbox, chosen));
         }, "explainstone-file-dialog");
         thread.setDaemon(true);
         thread.start();
