@@ -17,6 +17,7 @@ import com.ginka.explainstone.Explainstone;
 import com.ginka.explainstone.BroadcastTransmitterBlock;
 import com.ginka.explainstone.SongmelynBlock;
 import com.ginka.explainstone.SpeakerBlock;
+import com.ginka.explainstone.client.audio.AudioFilePicker;
 import com.ginka.explainstone.client.audio.AudioSources;
 import com.ginka.explainstone.client.audio.SpeakerAudio;
 import com.ginka.explainstone.client.audio.SpeakerAudioCache;
@@ -32,7 +33,6 @@ import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.network.chat.Component;
 import net.minecraft.core.BlockPos;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -570,61 +570,38 @@ public class SpeakerScreen extends Screen {
         this.openFileDialog(inbox);
     }
 
+    /**
+     * 在后台线程里挑一个 ogg：优先用桌面原生的选择器，都不行就退回 inbox 里已有的文件。
+     * 一定要离开渲染线程做，因为弹窗是阻塞的。喵
+     */
     private void openFileDialog(Path inbox) {
         Minecraft client = Minecraft.getInstance();
         Thread thread = new Thread(() -> {
-            String chosen = null;
-            boolean failed = false;
-            try {
-                java.awt.FileDialog dialog = new java.awt.FileDialog((java.awt.Frame) null, "选择 ogg 音频",
-                        java.awt.FileDialog.LOAD);
-                dialog.setDirectory(inbox.toString());
-                dialog.setFilenameFilter((dir, name) -> name.toLowerCase().endsWith(".ogg"));
-                dialog.setMultipleMode(false);
-                dialog.setVisible(true);
-                if (dialog.getFile() != null) {
-                    chosen = new File(dialog.getDirectory(), dialog.getFile()).getAbsolutePath();
-                }
-                dialog.dispose();
-            } catch (Throwable t) {
-                failed = true;
-            }
-            if (chosen == null && failed) {
-                try {
-                    final String[] picked = {null};
-                    javax.swing.SwingUtilities.invokeAndWait(() -> {
-                        javax.swing.JFileChooser chooser = new javax.swing.JFileChooser();
-                        chooser.setDialogTitle("选择 ogg 音频");
-                        chooser.setFileFilter(new javax.swing.filechooser.FileNameExtensionFilter("Ogg 音频 (*.ogg)", "ogg"));
-                        chooser.setCurrentDirectory(inbox.toFile());
-                        if (chooser.showOpenDialog(null) == javax.swing.JFileChooser.APPROVE_OPTION
-                                && chooser.getSelectedFile() != null) {
-                            picked[0] = chooser.getSelectedFile().getAbsolutePath();
-                        }
-                    });
-                    chosen = picked[0];
-                } catch (Throwable ignored) {
-                }
-            }
-            final String result = chosen;
-            client.execute(() -> {
-                if (result != null) {
-                    SpeakerAudioCache.importFile(client, this.pos, Path.of(result));
-                    return;
-                }
-                List<Path> files = listInbox(inbox);
-                if (!files.isEmpty()) {
-                    for (Path file : files) {
-                        SpeakerAudioCache.importFile(client, this.pos, file);
-                    }
-                    info(client, Component.translatable("message.explainstone.import.inbox", files.size()));
-                } else {
-                    info(client, Component.translatable("message.explainstone.import.none", inbox.toString()));
-                }
-            });
+            String chosen = AudioFilePicker.pick(inbox, "选择 ogg 音频");
+            client.execute(() -> this.finishImport(client, inbox, chosen));
         }, "explainstone-file-dialog");
         thread.setDaemon(true);
         thread.start();
+    }
+
+    private void finishImport(Minecraft client, Path inbox, String chosen) {
+        if (chosen != null) {
+            SpeakerAudioCache.importFile(client, this.pos, Path.of(chosen));
+            return;
+        }
+        this.importFromInbox(client, inbox);
+    }
+
+    private void importFromInbox(Minecraft client, Path inbox) {
+        List<Path> files = listInbox(inbox);
+        if (!files.isEmpty()) {
+            for (Path file : files) {
+                SpeakerAudioCache.importFile(client, this.pos, file);
+            }
+            info(client, Component.translatable("message.explainstone.import.inbox", files.size()));
+        } else {
+            info(client, Component.translatable("message.explainstone.import.none", inbox.toString()));
+        }
     }
 
     private static List<Path> listInbox(Path inbox) {

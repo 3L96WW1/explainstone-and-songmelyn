@@ -14,8 +14,12 @@ import net.minecraft.server.level.ServerPlayer;
 
 public final class FabricClientNetwork implements Network {
     public static void register() {
+        ClientPlayNetworking.registerGlobalReceiver(SpeakerPayloads.AudioMeta.ID,
+                (payload, context) -> context.client().execute(() -> SpeakerAudioCache.onAudioMeta(payload)));
         ClientPlayNetworking.registerGlobalReceiver(SpeakerPayloads.AudioChunk.ID,
                 (payload, context) -> context.client().execute(() -> SpeakerAudioCache.onAudioChunk(payload)));
+        ClientPlayNetworking.registerGlobalReceiver(SpeakerPayloads.ImportReply.ID,
+                (payload, context) -> context.client().execute(() -> SpeakerAudioCache.onImportReply(payload)));
         ClientPlayNetworking.registerGlobalReceiver(SpeakerPayloads.Broadcast.ID,
                 (payload, context) -> context.client().execute(() -> SpeakerAudioCache.onBroadcast(payload)));
     }

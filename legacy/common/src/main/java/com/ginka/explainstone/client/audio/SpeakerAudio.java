@@ -260,6 +260,10 @@ public final class SpeakerAudio {
         if (active != null) {
             active.sound.stop();
             Minecraft.getInstance().getSoundManager().stop(active.sound);
+            if (!AudioSources.hasLocal(active.track)) {
+                // 还没下载完就停播了，告诉服务端别再发了，省下剩下的流量
+                cancelAudio(active.track);
+            }
         }
     }
 
@@ -268,6 +272,9 @@ public final class SpeakerAudio {
         for (Active active : ACTIVE.values()) {
             active.sound.stop();
             soundManager.stop(active.sound);
+            if (!AudioSources.hasLocal(active.track)) {
+                cancelAudio(active.track);
+            }
         }
         ACTIVE.clear();
     }
@@ -342,16 +349,38 @@ public final class SpeakerAudio {
         return state.getBlock() instanceof SpeakerBlock && state.getValue(SpeakerBlock.PLAYING);
     }
 
+    /**
+     * 按需向服务端索取音频。
+     *
+     * <p>老实现收到文件后就把标记删掉，于是同一首歌每次重播都会再下一整遍——
+     * 实测 3 轮播放里 67% 的流量是这么白扔的。现在标记只表示「在传输中」，
+     * 本地已有文件就直接不发请求。
+     */
     private static void requestAudio(Track track) {
         if (!track.isFile()) {
             return;
         }
         String sha1 = track.sha1();
+        if (AudioSources.hasLocal(sha1)) {
+            return;
+        }
         if (!REQUESTED.add(sha1)) {
             return;
         }
         if (Explainstone.network().canSendToServer(SpeakerPayloads.RequestAudio.ID)) {
-            Explainstone.network().sendToServer(new SpeakerPayloads.RequestAudio(sha1));
+            // 断点续传：把已经收到的分片数带上，重连后不必从头再来
+            int fromChunk = SpeakerAudioCache.receivedChunks(sha1);
+            Explainstone.network().sendToServer(new SpeakerPayloads.RequestAudio(sha1, fromChunk));
+        }
+    }
+
+    private static void cancelAudio(Track track) {
+        if (track == null || !track.isFile()) {
+            return;
+        }
+        REQUESTED.remove(track.sha1());
+        if (Explainstone.network().canSendToServer(SpeakerPayloads.CancelAudio.ID)) {
+            Explainstone.network().sendToServer(new SpeakerPayloads.CancelAudio(track.sha1()));
         }
     }
 
@@ -384,15 +413,23 @@ public final class SpeakerAudio {
             LOGGER.info("broadcast ch={} stopped", payload.channel());
             return;
         }
-        List<Track> tracks = new ArrayList<>();
-        for (String part : payload.tracks().split("\u0002")) {
-            int sep = part.indexOf('\u0001');
-            if (sep > 0) {
-                tracks.add(new Track(part.substring(0, sep), part.substring(sep + 1)));
+        // 曲目表只在变化时才下发，空串表示「沿用你手上那份」
+        List<Track> tracks;
+        if (payload.tracks().isEmpty()) {
+            BroadcastInfo previous = BROADCASTS.get(payload.channel());
+            tracks = previous == null ? List.of() : previous.tracks();
+        } else {
+            List<Track> parsed = new ArrayList<>();
+            for (String part : payload.tracks().split("\u0002")) {
+                int sep = part.indexOf('\u0001');
+                if (sep > 0) {
+                    parsed.add(new Track(part.substring(0, sep), part.substring(sep + 1)));
+                }
             }
+            tracks = List.copyOf(parsed);
         }
         BROADCASTS.put(payload.channel(),
-                new BroadcastInfo(PlayMode.byOrdinal(payload.mode()), payload.index(), List.copyOf(tracks),
+                new BroadcastInfo(PlayMode.byOrdinal(payload.mode()), payload.index(), tracks,
                         payload.session(), payload.elapsedSeconds(), clock));
         LOGGER.info("broadcast ch={} mode={} index={} tracks={}",
                 payload.channel(), payload.mode(), payload.index(), tracks.size());
@@ -410,5 +447,11 @@ public final class SpeakerAudio {
                 iterator.remove();
             }
         }
+    }
+
+    /** 导入完成（服务端确认收到或本来就有），提示玩家并让界面刷新曲目表。 */
+    public static void onImportDone(String sha1, String label) {
+        REQUESTED.remove(sha1);
+        SpeakerAudioCache.notifyImportOk(label);
     }
 }

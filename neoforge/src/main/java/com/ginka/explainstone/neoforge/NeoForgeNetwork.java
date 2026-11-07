@@ -21,16 +21,21 @@ public final class NeoForgeNetwork implements Network {
         registrar.playToServer(SpeakerPayloads.Action.ID, SpeakerPayloads.Action.CODEC,
                 (payload, context) -> context.enqueueWork(() ->
                         SpeakerNetworking.handleAction((ServerPlayer) context.player(), payload)));
+        registrar.playToServer(SpeakerPayloads.ImportQuery.ID, SpeakerPayloads.ImportQuery.CODEC,
+                (payload, context) -> context.enqueueWork(() ->
+                        SpeakerNetworking.handleImportQuery((ServerPlayer) context.player(), payload)));
         registrar.playToServer(SpeakerPayloads.ImportChunk.ID, SpeakerPayloads.ImportChunk.CODEC,
                 (payload, context) -> context.enqueueWork(() ->
                         SpeakerNetworking.handleImport((ServerPlayer) context.player(), payload)));
         registrar.playToServer(SpeakerPayloads.RequestAudio.ID, SpeakerPayloads.RequestAudio.CODEC,
                 (payload, context) -> context.enqueueWork(() ->
                         SpeakerNetworking.handleRequest((ServerPlayer) context.player(), payload)));
+        registrar.playToServer(SpeakerPayloads.CancelAudio.ID, SpeakerPayloads.CancelAudio.CODEC,
+                (payload, context) -> context.enqueueWork(() ->
+                        SpeakerNetworking.handleCancel((ServerPlayer) context.player(), payload)));
         registrar.playToServer(SpeakerPayloads.Resync.ID, SpeakerPayloads.Resync.CODEC,
                 (payload, context) -> context.enqueueWork(() ->
                         SpeakerNetworking.onJoin((ServerPlayer) context.player())));
-
     }
 
     @Override

@@ -21,17 +21,25 @@ import net.minecraft.world.level.block.state.BlockState;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 /** 服务端广播登记表：记录每个世界里正在广播的发信器，并把频道与曲目推给附近客户端。 */
 public final class BroadcastRegistry {
     public static final double SIGNAL_RANGE = 512.0;
 
     private static final Map<ResourceKey<Level>, Map<BlockPos, Entry>> ACTIVE = new HashMap<>();
+    /**
+     * 每个玩家已经拿到过哪个频道的哪一版曲目表。
+     *
+     * <p>曲目表是广播包里最肥的部分（8 首约 660 字节），而它几乎从不变。
+     * 记下「已经发过」之后，后续心跳只带频道、序号和播放进度，包体缩到 10 字节左右。
+     */
+    private static final Map<UUID, Map<Integer, Integer>> SENT = new HashMap<>();
 
     private BroadcastRegistry() {
     }
 
-    private record Entry(int channel, List<Track> tracks, int index, int mode, int range,
+    private record Entry(int channel, List<Track> tracks, int tracksHash, int index, int mode, int range,
                          long session, long startGameTime) {
         Track current() {
             return this.index >= 0 && this.index < this.tracks.size() ? this.tracks.get(this.index) : null;
@@ -53,6 +61,11 @@ public final class BroadcastRegistry {
         return sb.toString();
     }
 
+    /** 曲目表的稳定指纹，用来判断「这个玩家是不是已经有这一版了」。 */
+    private static int hash(List<Track> tracks) {
+        return encode(tracks).hashCode();
+    }
+
     public static void refresh(ServerLevel level, BlockPos pos, SpeakerBlockEntity be) {
         BlockState state = level.getBlockState(pos);
         boolean active = state.getBlock() instanceof BroadcastTransmitterBlock
@@ -62,12 +75,14 @@ public final class BroadcastRegistry {
         Map<BlockPos, Entry> map = ACTIVE.computeIfAbsent(level.dimension(), k -> new HashMap<>());
         int range = Math.max(32, Math.min(512, be.getTransmitRange()));
         Entry old = map.get(pos.immutable());
-        long session = old != null && old.channel() == be.getChannel()
-                && old.index() == be.getSelected() && old.tracks().equals(be.getTracks())
-                ? old.session() : level.getGameTime();
+        List<Track> tracks = be.getTracks();
+        int tracksHash = hash(tracks);
+        // 曲目表没变就沿用同一个 session，客户端据此判断「还需要重传列表吗」
+        boolean sameContent = old != null && old.channel() == be.getChannel() && old.tracksHash() == tracksHash;
+        long session = sameContent ? old.session() : level.getGameTime();
         long startGameTime = old != null && old.session() == session ? old.startGameTime() : level.getGameTime();
         Entry entry = active
-                ? new Entry(be.getChannel(), be.getTracks(), be.getSelected(), be.getMode().ordinal(), range,
+                ? new Entry(be.getChannel(), tracks, tracksHash, be.getSelected(), be.getMode().ordinal(), range,
                         session, startGameTime)
                 : null;
         if (entry == null) {
@@ -110,6 +125,8 @@ public final class BroadcastRegistry {
     }
 
     public static void onJoin(ServerPlayer player) {
+        // 重新登录后客户端是空的，必须重新把曲目表发一遍
+        SENT.remove(player.getUUID());
         ServerLevel level = player.serverLevel();
         Map<BlockPos, Entry> map = ACTIVE.get(level.dimension());
         if (map == null) {
@@ -133,16 +150,31 @@ public final class BroadcastRegistry {
             }
         }
         map.clear();
+        SENT.clear();
+    }
+
+    /** 玩家离开时清掉他的「已发过」记录，避免 UUID 复用时误判。 */
+    public static void forgetPlayer(ServerPlayer player) {
+        SENT.remove(player.getUUID());
     }
 
     private static void send(ServerPlayer player, int channel, Entry entry, ServerLevel level) {
         if (entry == null) {
             Explainstone.network().sendToPlayer(player,
                     new SpeakerPayloads.Broadcast(channel, 0, 0, false, "", 0L, 0));
-        } else {
-            Explainstone.network().sendToPlayer(player, new SpeakerPayloads.Broadcast(
-                    entry.channel(), entry.mode(), entry.index(), true, encode(entry.tracks()),
-                    entry.session(), entry.elapsedSeconds(level)));
+            SENT.computeIfAbsent(player.getUUID(), k -> new HashMap<>()).remove(channel);
+            return;
         }
+        Map<Integer, Integer> sent = SENT.computeIfAbsent(player.getUUID(), k -> new HashMap<>());
+        Integer previous = sent.get(channel);
+        // 只有曲目表版本变了才带上列表；否则空串，客户端沿用自己手上的
+        boolean includeTracks = previous == null || previous != entry.tracksHash();
+        if (includeTracks) {
+            sent.put(channel, entry.tracksHash());
+        }
+        Explainstone.network().sendToPlayer(player, new SpeakerPayloads.Broadcast(
+                entry.channel(), entry.mode(), entry.index(), true,
+                includeTracks ? encode(entry.tracks()) : "",
+                entry.session(), entry.elapsedSeconds(level)));
     }
 }

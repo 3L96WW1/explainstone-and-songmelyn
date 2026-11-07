@@ -22,8 +22,12 @@ public final class NeoForgeClientNetwork {
     @SubscribeEvent
     public static void onPayloads(RegisterPayloadHandlersEvent event) {
         PayloadRegistrar registrar = event.registrar("1");
+        registrar.playToClient(SpeakerPayloads.AudioMeta.ID, SpeakerPayloads.AudioMeta.CODEC,
+                (payload, context) -> context.enqueueWork(() -> SpeakerAudioCache.onAudioMeta(payload)));
         registrar.playToClient(SpeakerPayloads.AudioChunk.ID, SpeakerPayloads.AudioChunk.CODEC,
                 (payload, context) -> context.enqueueWork(() -> SpeakerAudioCache.onAudioChunk(payload)));
+        registrar.playToClient(SpeakerPayloads.ImportReply.ID, SpeakerPayloads.ImportReply.CODEC,
+                (payload, context) -> context.enqueueWork(() -> SpeakerAudioCache.onImportReply(payload)));
         registrar.playToClient(SpeakerPayloads.Broadcast.ID, SpeakerPayloads.Broadcast.CODEC,
                 (payload, context) -> context.enqueueWork(() -> SpeakerAudioCache.onBroadcast(payload)));
     }
