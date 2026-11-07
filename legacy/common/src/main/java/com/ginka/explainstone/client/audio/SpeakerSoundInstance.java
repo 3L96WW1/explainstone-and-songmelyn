@@ -8,7 +8,7 @@
 package com.ginka.explainstone.client.audio;
 
 import com.ginka.explainstone.speaker.Track;
-import net.minecraft.Util;
+import net.minecraft.util.Util;
 import net.minecraft.client.resources.sounds.AbstractSoundInstance;
 import net.minecraft.client.resources.sounds.SoundInstance;
 import net.minecraft.client.resources.sounds.TickableSoundInstance;
@@ -57,6 +57,13 @@ public abstract class SpeakerSoundInstance extends AbstractSoundInstance impleme
 
     public final Track track() {
         return this.track;
+    }
+
+    /** 让声音跟着移动的声源走（特朗谱拿在手上时要跟着玩家）。 */
+    public final void moveTo(double x, double y, double z) {
+        this.x = x;
+        this.y = y;
+        this.z = z;
     }
 
     public final boolean isStarted() {

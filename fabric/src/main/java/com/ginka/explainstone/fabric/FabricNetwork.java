@@ -10,6 +10,10 @@ import com.ginka.explainstone.speaker.BroadcastRegistry;
 import com.ginka.explainstone.speaker.ServerAudioStore;
 import com.ginka.explainstone.speaker.SpeakerNetworking;
 import com.ginka.explainstone.speaker.SpeakerPayloads;
+import com.ginka.explainstone.trumpet.TrumpetNetworking;
+import com.ginka.explainstone.trumpet.TrumpetPayloads;
+import com.ginka.explainstone.voice.VoiceNetworking;
+import com.ginka.explainstone.voice.VoicePayloads;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
@@ -36,6 +40,15 @@ public final class FabricNetwork implements Network {
         PayloadTypeRegistry.clientboundPlay().register(SpeakerPayloads.AudioChunk.ID, SpeakerPayloads.AudioChunk.CODEC);
         PayloadTypeRegistry.clientboundPlay().register(SpeakerPayloads.ImportReply.ID, SpeakerPayloads.ImportReply.CODEC);
         PayloadTypeRegistry.clientboundPlay().register(SpeakerPayloads.Broadcast.ID, SpeakerPayloads.Broadcast.CODEC);
+        PayloadTypeRegistry.serverboundPlay().register(TrumpetPayloads.Action.ID, TrumpetPayloads.Action.CODEC);
+        PayloadTypeRegistry.serverboundPlay().register(TrumpetPayloads.ImportQuery.ID, TrumpetPayloads.ImportQuery.CODEC);
+        PayloadTypeRegistry.serverboundPlay().register(TrumpetPayloads.ImportChunk.ID, TrumpetPayloads.ImportChunk.CODEC);
+        PayloadTypeRegistry.serverboundPlay().register(TrumpetPayloads.Play.ID, TrumpetPayloads.Play.CODEC);
+        PayloadTypeRegistry.clientboundPlay().register(TrumpetPayloads.StateSync.ID, TrumpetPayloads.StateSync.CODEC);
+        PayloadTypeRegistry.serverboundPlay().register(VoicePayloads.Chunk.ID, VoicePayloads.Chunk.CODEC);
+        PayloadTypeRegistry.clientboundPlay().register(VoicePayloads.Frame.ID, VoicePayloads.Frame.CODEC);
+
+        PayloadTypeRegistry.clientboundPlay().register(VoicePayloads.Speaking.ID, VoicePayloads.Speaking.CODEC);
 
         ServerPlayNetworking.registerGlobalReceiver(SpeakerPayloads.Action.ID,
                 (payload, context) -> context.server().execute(() ->
@@ -55,16 +68,37 @@ public final class FabricNetwork implements Network {
         ServerPlayNetworking.registerGlobalReceiver(SpeakerPayloads.Resync.ID,
                 (payload, context) -> context.server().execute(() ->
                         SpeakerNetworking.onJoin(context.player())));
+        ServerPlayNetworking.registerGlobalReceiver(TrumpetPayloads.Action.ID,
+                (payload, context) -> context.server().execute(() ->
+                        TrumpetNetworking.handleAction(context.player(), payload)));
+        ServerPlayNetworking.registerGlobalReceiver(TrumpetPayloads.ImportQuery.ID,
+                (payload, context) -> context.server().execute(() ->
+                        TrumpetNetworking.handleImportQuery(context.player(), payload)));
+        ServerPlayNetworking.registerGlobalReceiver(TrumpetPayloads.ImportChunk.ID,
+                (payload, context) -> context.server().execute(() ->
+                        TrumpetNetworking.handleImport(context.player(), payload)));
+        ServerPlayNetworking.registerGlobalReceiver(TrumpetPayloads.Play.ID,
+                (payload, context) -> context.server().execute(() ->
+                        TrumpetNetworking.handleAction(context.player(),
+                                new TrumpetPayloads.Action(payload.slot(), 2, payload.index()))));
+        ServerPlayNetworking.registerGlobalReceiver(VoicePayloads.Chunk.ID,
+                (payload, context) -> context.server().execute(() ->
+                        VoiceNetworking.onChunk(context.player(), payload)));
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) ->
                 server.execute(() -> SpeakerNetworking.onJoin(handler.getPlayer())));
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) ->
                 server.execute(() -> {
                     SpeakerNetworking.onDisconnect(handler.getPlayer());
                     BroadcastRegistry.forgetPlayer(handler.getPlayer());
+                    VoiceNetworking.onDisconnect(handler.getPlayer());
+                    TrumpetNetworking.onDisconnect(handler.getPlayer());
                 }));
         // 服务器每 tick 推进下发队列：老实现是一次性把整首歌塞进网络层，
         // 几百个包压在同 tick 里会拖慢主线程，也顶不住网络层积压
-        ServerTickEvents.END_SERVER_TICK.register(SpeakerNetworking::tick);
+        ServerTickEvents.END_SERVER_TICK.register(server -> {
+            SpeakerNetworking.tick(server);
+            VoiceNetworking.tick(server);
+        });
         ServerLifecycleEvents.SERVER_STARTED.register(server -> ServerAudioStore.migrateLegacy(server));
     }
 

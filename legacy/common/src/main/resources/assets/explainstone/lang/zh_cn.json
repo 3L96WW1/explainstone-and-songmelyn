@@ -59,5 +59,16 @@
   "message.explainstone.import.dialog_failed": "系统文件框不可用，请把 .ogg 放到 %s 后再点导入",
   "message.explainstone.audio.unavailable": "没有可用的音频设备，讲解石/颂美铃不会发声",
   "message.explainstone.broadcast.no_permission": "只有 OP 才能开始广播",
-  "message.explainstone.audio.too_big": "这条音频解码后过大，已跳过播放"
+  "message.explainstone.audio.too_big": "这条音频解码后过大，已跳过播放",
+  "item.explainstone.trumpet": "特朗谱",
+  "screen.explainstone.title.trumpet": "特朗谱",
+  "tooltip.explainstone.trumpet.channel": "频道 %s",
+  "tooltip.explainstone.trumpet.volume": "音量 %s%%",
+  "tooltip.explainstone.trumpet.hold_to_talk": "手持时按住 CapsLock 说话",
+  "key.explainstone.talk": "按住说话",
+  "key.category.explainstone.main": "讲解石",
+  "message.explainstone.voice.title": "特朗谱",
+  "message.explainstone.voice.unavailable": "服务器没有启用语音（可能是服务端没装这个模组或版本不匹配）",
+  "message.explainstone.voice.no_device": "找不到可用的麦克风",
+  "message.explainstone.voice.encoder_failed": "音频编码器初始化失败"
 }

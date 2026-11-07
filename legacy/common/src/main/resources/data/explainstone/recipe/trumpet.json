@@ -1,0 +1,27 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "pattern": [
+    " ca",
+    "cnc",
+    "lc "
+  ],
+  "key": {
+    "c": {
+      "item": "minecraft:copper_ingot"
+    },
+    "a": {
+      "item": "minecraft:amethyst_shard"
+    },
+    "n": {
+      "item": "minecraft:note_block"
+    },
+    "l": {
+      "item": "minecraft:leather"
+    }
+  },
+  "result": {
+    "id": "explainstone:trumpet",
+    "count": 1
+  }
+}

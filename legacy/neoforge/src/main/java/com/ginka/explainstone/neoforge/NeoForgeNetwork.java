@@ -8,6 +8,10 @@ package com.ginka.explainstone.neoforge;
 import com.ginka.explainstone.platform.Network;
 import com.ginka.explainstone.speaker.SpeakerNetworking;
 import com.ginka.explainstone.speaker.SpeakerPayloads;
+import com.ginka.explainstone.trumpet.TrumpetNetworking;
+import com.ginka.explainstone.trumpet.TrumpetPayloads;
+import com.ginka.explainstone.voice.VoiceNetworking;
+import com.ginka.explainstone.voice.VoicePayloads;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.neoforge.network.PacketDistributor;
@@ -35,7 +39,31 @@ public final class NeoForgeNetwork implements Network {
         registrar.playToServer(SpeakerPayloads.Resync.ID, SpeakerPayloads.Resync.CODEC,
                 (payload, context) -> context.enqueueWork(() ->
                         SpeakerNetworking.onJoin((ServerPlayer) context.player())));
-
+        registrar.playToServer(TrumpetPayloads.Action.ID, TrumpetPayloads.Action.CODEC,
+                (payload, context) -> context.enqueueWork(() ->
+                        TrumpetNetworking.handleAction((ServerPlayer) context.player(), payload)));
+        registrar.playToServer(TrumpetPayloads.ImportQuery.ID, TrumpetPayloads.ImportQuery.CODEC,
+                (payload, context) -> context.enqueueWork(() ->
+                        TrumpetNetworking.handleImportQuery((ServerPlayer) context.player(), payload)));
+        registrar.playToServer(TrumpetPayloads.ImportChunk.ID, TrumpetPayloads.ImportChunk.CODEC,
+                (payload, context) -> context.enqueueWork(() ->
+                        TrumpetNetworking.handleImport((ServerPlayer) context.player(), payload)));
+        registrar.playToServer(TrumpetPayloads.Play.ID, TrumpetPayloads.Play.CODEC,
+                (payload, context) -> context.enqueueWork(() ->
+                        TrumpetNetworking.handleAction((ServerPlayer) context.player(),
+                                new TrumpetPayloads.Action(payload.slot(), 2, payload.index()))));
+        registrar.playToClient(TrumpetPayloads.StateSync.ID, TrumpetPayloads.StateSync.CODEC,
+                (payload, context) -> context.enqueueWork(() ->
+                        com.ginka.explainstone.client.TrumpetPanel.onStateSync(payload)));
+        registrar.playToServer(VoicePayloads.Chunk.ID, VoicePayloads.Chunk.CODEC,
+                (payload, context) -> context.enqueueWork(() ->
+                        VoiceNetworking.onChunk((ServerPlayer) context.player(), payload)));
+        registrar.playToClient(VoicePayloads.Frame.ID, VoicePayloads.Frame.CODEC,
+                (payload, context) -> context.enqueueWork(() ->
+                        com.ginka.explainstone.voice.VoiceManager.onFrame(payload)));
+        registrar.playToClient(VoicePayloads.Speaking.ID, VoicePayloads.Speaking.CODEC,
+                (payload, context) -> context.enqueueWork(() ->
+                        com.ginka.explainstone.voice.VoiceManager.onSpeaking(payload)));
     }
 
     @Override

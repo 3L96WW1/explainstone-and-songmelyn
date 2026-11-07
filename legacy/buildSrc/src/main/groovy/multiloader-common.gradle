@@ -14,11 +14,34 @@ java {
 
 repositories {
 	mavenCentral()
+	flatDir {
+		dirs rootProject.file('libs')
+	}
+}
+
+dependencies {
+	// 纯 Java 的 Opus 编解码实现，用于特朗谱的实时语音。
+	// 打进 jar 里（见下面的 jar 任务），玩家不需要额外装任何东西。
+	compileOnly fileTree(dir: rootProject.file('libs'), include: ['*.jar'])
 }
 
 jar {
 	from(rootProject.file('LICENSE')) {
 		rename { "${it}_${mod_name}" }
+	}
+	// 把 libs/ 下的依赖解包合并进来（含各自的 LICENSE），
+	// 这样不必依赖 loader 各自的 jar-in-jar DSL。
+	from({
+		rootProject.file('libs').listFiles()
+				?.findAll { it.name.endsWith('.jar') && !it.name.endsWith('-sources.jar') }
+				?.collect { zipTree(it) }
+				?: []
+	}) {
+		exclude 'META-INF/MANIFEST.MF'
+		exclude 'META-INF/*.SF', 'META-INF/*.DSA', 'META-INF/*.RSA'
+	}
+	from(rootProject.file('libs')) {
+		include '*.LICENSE'
 	}
 }
 

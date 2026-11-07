@@ -59,5 +59,16 @@
   "message.explainstone.import.dialog_failed": "File dialog unavailable; put .ogg files into %s and click import again.",
   "message.explainstone.audio.unavailable": "No audio device available; speakers will be silent.",
   "message.explainstone.broadcast.no_permission": "Only operators can start broadcasting",
-  "message.explainstone.audio.too_big": "This track is too large after decoding and was skipped"
+  "message.explainstone.audio.too_big": "This track is too large after decoding and was skipped",
+  "item.explainstone.trumpet": "Trumpet",
+  "screen.explainstone.title.trumpet": "Trumpet",
+  "tooltip.explainstone.trumpet.channel": "Channel %s",
+  "tooltip.explainstone.trumpet.volume": "Volume %s%%",
+  "tooltip.explainstone.trumpet.hold_to_talk": "Hold CapsLock while held to talk",
+  "key.explainstone.talk": "Hold to Talk",
+  "key.category.explainstone.main": "Explainstone",
+  "message.explainstone.voice.title": "Trumpet",
+  "message.explainstone.voice.unavailable": "Voice is not available on this server (mod missing or version mismatch)",
+  "message.explainstone.voice.no_device": "No usable microphone found",
+  "message.explainstone.voice.encoder_failed": "Failed to initialise the audio encoder"
 }

@@ -7,6 +7,7 @@ package com.ginka.explainstone.fabric;
 
 import com.ginka.explainstone.Explainstone;
 import com.ginka.explainstone.ModBlocks;
+import com.ginka.explainstone.ModItems;
 import com.ginka.explainstone.speaker.SpeakerBlockEntity;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
@@ -25,6 +26,7 @@ public final class ExplainstoneFabric implements ModInitializer {
 
         ModBlocks.registerBlocks();
         ModBlocks.registerItems();
+        ModItems.register();
         ModBlocks.speakerBlockEntity = FabricBlockEntityTypeBuilder.create(
                 SpeakerBlockEntity::new, ModBlocks.allBlocks().toArray(Block[]::new)).build();
         Registry.register(BuiltInRegistries.BLOCK_ENTITY_TYPE,
@@ -33,6 +35,9 @@ public final class ExplainstoneFabric implements ModInitializer {
 
         FabricNetwork.registerServer();
         ItemGroupEvents.modifyEntriesEvent(CreativeModeTabs.REDSTONE_BLOCKS)
-                .register(entries -> ModBlocks.allBlocks().forEach(block -> entries.accept(new ItemStack(block))));
+                .register(entries -> {
+                    ModBlocks.allBlocks().forEach(block -> entries.accept(new ItemStack(block)));
+                    entries.accept(ModItems.newTrumpet());
+                });
     }
 }

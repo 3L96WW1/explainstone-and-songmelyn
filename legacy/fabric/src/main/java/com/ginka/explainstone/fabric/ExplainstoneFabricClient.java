@@ -7,6 +7,7 @@ package com.ginka.explainstone.fabric;
 
 import com.ginka.explainstone.client.ExplainstoneClient;
 import com.ginka.explainstone.client.audio.SpeakerAudio;
+import com.ginka.explainstone.voice.VoiceManager;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
@@ -17,9 +18,11 @@ public final class ExplainstoneFabricClient implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
         SpeakerAudio.setSoundFactory(FabricSpeakerSound::new);
+        VoiceManager.setSoundFactory(FabricVoiceSound::new);
         FabricNetwork.setClientDelegate(new FabricClientNetwork());
         ExplainstoneClient.init();
         FabricClientNetwork.register();
+        FabricVoiceClient.register();
 
         ClientTickEvents.END_CLIENT_TICK.register(ExplainstoneClient::tick);
         ClientLifecycleEvents.CLIENT_STOPPING.register(ExplainstoneClient::stopping);

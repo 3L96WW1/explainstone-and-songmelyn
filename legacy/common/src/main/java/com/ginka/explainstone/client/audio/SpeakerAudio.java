@@ -55,6 +55,7 @@ public final class SpeakerAudio {
     private static final Map<Integer, BroadcastInfo> BROADCASTS = new HashMap<>();
     private static final Map<String, Long> LOCAL_START = new HashMap<>();
     private static final Set<String> REQUESTED = new HashSet<>();
+    private static final List<java.util.function.Consumer<String>> AUDIO_LISTENERS = new ArrayList<>();
     private static final Random RANDOM = new Random();
 
     private static SpeakerSoundFactory factory;
@@ -91,6 +92,30 @@ public final class SpeakerAudio {
 
     public static void setSoundFactory(SpeakerSoundFactory newFactory) {
         factory = newFactory;
+    }
+
+    /** 给特朗谱这类「非方块声源」复用同一套声音实现。 */
+    public static SpeakerSoundInstance createSound(BlockPos pos, Track track, int audibleRange, int volume,
+                                                   double startOffsetSeconds) {
+        return factory == null ? null : factory.create(pos, track, audibleRange, volume, startOffsetSeconds);
+    }
+
+    /** 音频下载完成时通知所有监听者（特朗谱要借此重开还没起来的声音）。 */
+    public static void addAudioListener(java.util.function.Consumer<String> listener) {
+        AUDIO_LISTENERS.add(listener);
+    }
+
+    /** 某频道上广播的只读快照，给特朗谱的收信模式用。 */
+    public record BroadcastView(List<Track> tracks, int index, double elapsed) {
+    }
+
+    public static BroadcastView broadcastView(int channel) {
+        BroadcastInfo info = BROADCASTS.get(channel);
+        if (info == null || info.tracks().isEmpty()) {
+            return null;
+        }
+        int index = Math.max(0, Math.min(info.tracks().size() - 1, info.index()));
+        return new BroadcastView(info.tracks(), index, broadcastElapsed(info));
     }
 
     public static void init() {
@@ -356,7 +381,7 @@ public final class SpeakerAudio {
      * 实测 3 轮播放里 67% 的流量是这么白扔的。现在标记只表示「在传输中」，
      * 本地已有文件就直接不发请求。
      */
-    private static void requestAudio(Track track) {
+    public static void requestAudio(Track track) {
         if (!track.isFile()) {
             return;
         }
@@ -374,7 +399,7 @@ public final class SpeakerAudio {
         }
     }
 
-    private static void cancelAudio(Track track) {
+    public static void cancelAudio(Track track) {
         if (track == null || !track.isFile()) {
             return;
         }
@@ -437,6 +462,9 @@ public final class SpeakerAudio {
 
     public static void onAudioReceived(String sha1) {
         REQUESTED.remove(sha1);
+        for (java.util.function.Consumer<String> listener : AUDIO_LISTENERS) {
+            listener.accept(sha1);
+        }
         Iterator<Map.Entry<BlockPos, Active>> iterator = ACTIVE.entrySet().iterator();
         while (iterator.hasNext()) {
             Map.Entry<BlockPos, Active> entry = iterator.next();

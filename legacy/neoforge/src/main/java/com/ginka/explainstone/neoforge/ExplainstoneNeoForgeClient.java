@@ -8,6 +8,7 @@ package com.ginka.explainstone.neoforge;
 import com.ginka.explainstone.Explainstone;
 import com.ginka.explainstone.client.ExplainstoneClient;
 import com.ginka.explainstone.client.audio.SpeakerAudio;
+import com.ginka.explainstone.voice.VoiceManager;
 import net.minecraft.client.Minecraft;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -24,6 +25,7 @@ public final class ExplainstoneNeoForgeClient {
         @SubscribeEvent
         public static void onClientSetup(FMLClientSetupEvent event) {
             SpeakerAudio.setSoundFactory(NeoForgeSpeakerSound::new);
+            VoiceManager.setSoundFactory(NeoForgeVoiceSound::new);
             ExplainstoneClient.init();
         }
     }
