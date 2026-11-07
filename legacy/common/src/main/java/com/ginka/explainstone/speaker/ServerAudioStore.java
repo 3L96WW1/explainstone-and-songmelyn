@@ -162,9 +162,26 @@ public final class ServerAudioStore {
         save();
         // 搬完就把旧目录删掉，否则存档里那份白占空间
         deleteTree(legacy);
+        // 父目录只在空了才删：万一以后往 <world>/explainstone/ 里放了别的东西，
+        // 一律清空会把别人的数据一起带走
         Path parent = legacy.getParent();
         if (parent != null) {
-            deleteTree(parent);
+            deleteIfEmpty(parent);
+        }
+    }
+
+    /** 只在目录确实为空时删除它。 */
+    private static void deleteIfEmpty(Path dir) {
+        try (DirectoryStream<Path> stream = Files.newDirectoryStream(dir)) {
+            if (stream.iterator().hasNext()) {
+                return;
+            }
+        } catch (IOException e) {
+            return;
+        }
+        try {
+            Files.deleteIfExists(dir);
+        } catch (IOException ignored) {
         }
     }
 
