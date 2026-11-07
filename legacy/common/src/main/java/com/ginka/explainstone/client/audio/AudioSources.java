@@ -104,7 +104,11 @@ public final class AudioSources {
     }
 
     public static boolean hasLocal(Track track) {
-        return track.isFile() && Files.isRegularFile(cacheFile(track.sha1()));
+        return track.isFile() && hasLocal(track.sha1());
+    }
+
+    public static boolean hasLocal(String sha1) {
+        return Files.isRegularFile(cacheFile(sha1));
     }
 
     /** 打开曲目的 ogg 数据流；拿不到返回 null 喵 */

@@ -19,30 +19,32 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.permissions.Permissions;
-import net.minecraft.world.level.storage.LevelResource;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 
-/** 服务端逻辑：处理界面操作、接收导入的 ogg、把存档里的音频发给客户端。 */
+/** 服务端逻辑：处理界面操作、接收导入的 ogg、把仓库里的音频发给客户端。 */
 public final class SpeakerNetworking {
     private static final int MAX_FILE_BYTES = 6 * 1024 * 1024;
     private static final int MAX_SECONDS = 5 * 60;
     private static final double MAX_INTERACT_DISTANCE_SQ = 64 * 64;
+    /** 上传缓冲的存活时间：玩家中途关掉客户端时不至于永久占内存。 */
+    private static final long UPLOAD_TTL_MILLIS = 10L * 60 * 1000;
 
-    private static final Map<String, ByteArrayOutputStream> UPLOADS = new HashMap<>();
+    private static final Map<String, Upload> UPLOADS = new HashMap<>();
 
     private SpeakerNetworking() {
     }
 
-    public static Path audioDir(MinecraftServer server) {
-        return server.getWorldPath(LevelResource.ROOT).resolve("explainstone").resolve("audio");
+    /**
+     * 音频目录。移到 config 下，不再跟着存档走——存档会被复制、备份、上传，
+     * 音频混在里面每个副本都要背一份。详见 {@link ServerAudioStore}。
+     */
+    public static java.nio.file.Path audioDir(MinecraftServer server) {
+        return ServerAudioStore.dir();
     }
 
     public static void handleAction(ServerPlayer player, SpeakerPayloads.Action payload) {
@@ -111,6 +113,27 @@ public final class SpeakerNetworking {
         }
     }
 
+    /**
+     * 导入前先问一句「服务端有没有这份数据」。
+     *
+     * <p>内容寻址的好处就在这里：sha1 相同就是同一首歌，服务端已经有的话
+     * 客户端一块都不用传，直接把曲目挂到方块上。这同时解决了重复上传
+     * 覆盖写盘的问题。
+     */
+    public static void handleImportQuery(ServerPlayer player, SpeakerPayloads.ImportQuery payload) {
+        String sha1 = payload.sha1();
+        if (sha1.isEmpty() || sha1.length() > 64) {
+            return;
+        }
+        if (ServerAudioStore.has(sha1)) {
+            attachTrack(player, payload.pos(), payload.label(), sha1);
+            Explainstone.network().sendToPlayer(player, new SpeakerPayloads.ImportReply(sha1, payload.total()));
+            player.sendOverlayMessage(Component.translatable("message.explainstone.import.ok", payload.label()));
+            return;
+        }
+        Explainstone.network().sendToPlayer(player, new SpeakerPayloads.ImportReply(sha1, 0));
+    }
+
     public static void handleImport(ServerPlayer player, SpeakerPayloads.ImportChunk payload) {
         if (!(player.level() instanceof ServerLevel level)) {
             return;
@@ -118,74 +141,49 @@ public final class SpeakerNetworking {
         if (payload.total() <= 0 || payload.index() < 0 || payload.index() >= payload.total()) {
             return;
         }
+        expireUploads();
         String key = player.getStringUUID() + "/" + payload.sha1();
-        ByteArrayOutputStream buffer = UPLOADS.computeIfAbsent(key, k -> new ByteArrayOutputStream());
-        buffer.writeBytes(payload.data());
-        if (buffer.size() > MAX_FILE_BYTES) {
+        Upload upload = UPLOADS.computeIfAbsent(key, k -> new Upload());
+        upload.lastTouched = System.currentTimeMillis();
+        upload.put(payload.index(), payload.data());
+        if (upload.bytes > MAX_FILE_BYTES) {
             UPLOADS.remove(key);
             player.sendSystemMessage(Component.translatable("message.explainstone.import.too_large"));
             return;
         }
-        if (payload.index() + 1 < payload.total()) {
+        if (!upload.isComplete(payload.total())) {
             return;
         }
 
         UPLOADS.remove(key);
-        byte[] bytes = buffer.toByteArray();
+        byte[] bytes = upload.assemble();
         if (!isOgg(bytes)) {
             player.sendSystemMessage(Component.translatable("message.explainstone.import.not_ogg"));
             return;
         }
-        int seconds = oggSeconds(bytes);
+        int seconds = ServerAudioStore.oggSeconds(bytes);
         if (seconds > MAX_SECONDS) {
             player.sendSystemMessage(Component.translatable("message.explainstone.import.too_long"));
             return;
         }
-        try {
-            Path dir = audioDir(level.getServer());
-            Files.createDirectories(dir);
-            Files.write(dir.resolve(payload.sha1() + ".ogg"), bytes);
-        } catch (IOException e) {
-            player.sendSystemMessage(Component.translatable("message.explainstone.import.failed"));
-            return;
-        }
-
-        if (level.getBlockEntity(payload.pos()) instanceof SpeakerBlockEntity be) {
-            Track track = Track.file(payload.label(), payload.sha1());
-            if (!be.getTracks().contains(track)) {
-                be.addTrack(track);
-            }
-        }
+        ServerAudioStore.put(payload.sha1(), bytes, seconds);
+        attachTrack(player, payload.pos(), payload.label(), payload.sha1());
         player.sendOverlayMessage(Component.translatable("message.explainstone.import.ok", payload.label()));
     }
 
-    private static int oggSeconds(byte[] data) {
-        int rate = -1;
-        for (int i = 0; i + 4 <= data.length; i++) {
-            if (data[i] == 'O' && data[i + 1] == 'g' && data[i + 2] == 'g' && data[i + 3] == 'S') {
-                int segments = data[i + 26] & 0xFF;
-                int pkt = i + 27 + segments;
-                if (pkt + 16 <= data.length && data[pkt] == 1) {
-                    rate = (data[pkt + 12] & 0xFF) | ((data[pkt + 13] & 0xFF) << 8)
-                            | ((data[pkt + 14] & 0xFF) << 16) | ((data[pkt + 15] & 0xFF) << 24);
-                }
-                break;
-            }
+    private static void attachTrack(ServerPlayer player, BlockPos pos, String label, String sha1) {
+        if (!(player.level().getBlockEntity(pos) instanceof SpeakerBlockEntity be)) {
+            return;
         }
-        if (rate <= 0) {
-            return -1;
+        Track track = Track.file(label, sha1);
+        if (!be.getTracks().contains(track)) {
+            be.addTrack(track);
         }
-        for (int i = data.length - 4; i >= 0; i--) {
-            if (data[i] == 'O' && data[i + 1] == 'g' && data[i + 2] == 'g' && data[i + 3] == 'S'
-                    && i + 14 <= data.length) {
-                long granule = 0L;
-                for (int b = 7; b >= 0; b--) {
-                    granule = (granule << 8) | (data[i + 6 + b] & 0xFF);
-                }
-                return granule > 0 ? (int) (granule / rate) : -1;
-            }
-        }
-        return -1;
+    }
+
+    private static void expireUploads() {
+        long now = System.currentTimeMillis();
+        UPLOADS.entrySet().removeIf(entry -> now - entry.getValue().lastTouched > UPLOAD_TTL_MILLIS);
     }
 
     private static boolean isOgg(byte[] bytes) {
@@ -193,30 +191,62 @@ public final class SpeakerNetworking {
     }
 
     public static void handleRequest(ServerPlayer player, SpeakerPayloads.RequestAudio payload) {
-        String sha1 = payload.sha1();
-        if (sha1.isEmpty() || sha1.length() > 64) {
-            return;
-        }
-        Path file = audioDir(player.level().getServer()).resolve(sha1 + ".ogg");
-        if (!Files.isRegularFile(file)) {
-            return;
-        }
-        try {
-            byte[] bytes = Files.readAllBytes(file);
-            int total = (bytes.length + SpeakerPayloads.CHUNK_SIZE - 1) / SpeakerPayloads.CHUNK_SIZE;
-            for (int i = 0; i < total; i++) {
-                int from = i * SpeakerPayloads.CHUNK_SIZE;
-                int len = Math.min(SpeakerPayloads.CHUNK_SIZE, bytes.length - from);
-                byte[] part = new byte[len];
-                System.arraycopy(bytes, from, part, 0, len);
-                Explainstone.network().sendToPlayer(player,
-                        new SpeakerPayloads.AudioChunk(sha1, sha1, i, total, part));
-            }
-        } catch (IOException ignored) {
-        }
+        TransferManager.request(player, payload.sha1(), payload.fromChunk());
+    }
+
+    public static void handleCancel(ServerPlayer player, SpeakerPayloads.CancelAudio payload) {
+        TransferManager.cancel(player, payload.sha1());
     }
 
     public static void onJoin(ServerPlayer player) {
+        ServerAudioStore.gc();
         BroadcastRegistry.onJoin(player);
+    }
+
+    public static void onDisconnect(ServerPlayer player) {
+        TransferManager.forget(player);
+        UPLOADS.keySet().removeIf(key -> key.startsWith(player.getStringUUID() + "/"));
+    }
+
+    /** 服务器每 tick 推进下发队列。 */
+    public static void tick(MinecraftServer server) {
+        TransferManager.tick(server);
+    }
+
+    /** 一个进行中的上传：按分片下标存，天然支持乱序到达与断点续传。 */
+    private static final class Upload {
+        private final Map<Integer, byte[]> parts = new HashMap<>();
+        private int bytes;
+        private long lastTouched = System.currentTimeMillis();
+
+        private void put(int index, byte[] data) {
+            if (this.parts.putIfAbsent(index, data) == null) {
+                this.bytes += data.length;
+            }
+        }
+
+        private boolean isComplete(int total) {
+            if (this.parts.size() < total) {
+                return false;
+            }
+            for (int i = 0; i < total; i++) {
+                if (!this.parts.containsKey(i)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        private byte[] assemble() {
+            ByteArrayOutputStream out = new ByteArrayOutputStream(this.bytes);
+            for (int i = 0; ; i++) {
+                byte[] part = this.parts.get(i);
+                if (part == null) {
+                    break;
+                }
+                out.writeBytes(part);
+            }
+            return out.toByteArray();
+        }
     }
 }
