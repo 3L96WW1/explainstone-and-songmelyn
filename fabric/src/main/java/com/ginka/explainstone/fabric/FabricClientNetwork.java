@@ -8,6 +8,10 @@ package com.ginka.explainstone.fabric;
 import com.ginka.explainstone.client.audio.SpeakerAudioCache;
 import com.ginka.explainstone.platform.Network;
 import com.ginka.explainstone.speaker.SpeakerPayloads;
+import com.ginka.explainstone.trumpet.TrumpetPayloads;
+import com.ginka.explainstone.client.TrumpetPanel;
+import com.ginka.explainstone.voice.VoiceManager;
+import com.ginka.explainstone.voice.VoicePayloads;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.server.level.ServerPlayer;
@@ -22,6 +26,12 @@ public final class FabricClientNetwork implements Network {
                 (payload, context) -> context.client().execute(() -> SpeakerAudioCache.onImportReply(payload)));
         ClientPlayNetworking.registerGlobalReceiver(SpeakerPayloads.Broadcast.ID,
                 (payload, context) -> context.client().execute(() -> SpeakerAudioCache.onBroadcast(payload)));
+        ClientPlayNetworking.registerGlobalReceiver(TrumpetPayloads.StateSync.ID,
+                (payload, context) -> context.client().execute(() -> TrumpetPanel.onStateSync(payload)));
+        ClientPlayNetworking.registerGlobalReceiver(VoicePayloads.Frame.ID,
+                (payload, context) -> context.client().execute(() -> VoiceManager.onFrame(payload)));
+        ClientPlayNetworking.registerGlobalReceiver(VoicePayloads.Speaking.ID,
+                (payload, context) -> context.client().execute(() -> VoiceManager.onSpeaking(payload)));
     }
 
     @Override

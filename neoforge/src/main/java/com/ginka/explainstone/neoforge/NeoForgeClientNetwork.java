@@ -7,7 +7,11 @@ package com.ginka.explainstone.neoforge;
 
 import com.ginka.explainstone.Explainstone;
 import com.ginka.explainstone.client.audio.SpeakerAudioCache;
+import com.ginka.explainstone.client.TrumpetPanel;
 import com.ginka.explainstone.speaker.SpeakerPayloads;
+import com.ginka.explainstone.trumpet.TrumpetPayloads;
+import com.ginka.explainstone.voice.VoiceManager;
+import com.ginka.explainstone.voice.VoicePayloads;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -30,5 +34,11 @@ public final class NeoForgeClientNetwork {
                 (payload, context) -> context.enqueueWork(() -> SpeakerAudioCache.onImportReply(payload)));
         registrar.playToClient(SpeakerPayloads.Broadcast.ID, SpeakerPayloads.Broadcast.CODEC,
                 (payload, context) -> context.enqueueWork(() -> SpeakerAudioCache.onBroadcast(payload)));
+        registrar.playToClient(TrumpetPayloads.StateSync.ID, TrumpetPayloads.StateSync.CODEC,
+                (payload, context) -> context.enqueueWork(() -> TrumpetPanel.onStateSync(payload)));
+        registrar.playToClient(VoicePayloads.Frame.ID, VoicePayloads.Frame.CODEC,
+                (payload, context) -> context.enqueueWork(() -> VoiceManager.onFrame(payload)));
+        registrar.playToClient(VoicePayloads.Speaking.ID, VoicePayloads.Speaking.CODEC,
+                (payload, context) -> context.enqueueWork(() -> VoiceManager.onSpeaking(payload)));
     }
 }

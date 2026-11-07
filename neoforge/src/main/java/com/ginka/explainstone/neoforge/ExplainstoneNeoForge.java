@@ -7,10 +7,13 @@ package com.ginka.explainstone.neoforge;
 
 import com.ginka.explainstone.Explainstone;
 import com.ginka.explainstone.ModBlocks;
+import com.ginka.explainstone.ModItems;
 import com.ginka.explainstone.speaker.BroadcastRegistry;
 import com.ginka.explainstone.speaker.ServerAudioStore;
 import com.ginka.explainstone.speaker.SpeakerBlockEntity;
 import com.ginka.explainstone.speaker.SpeakerNetworking;
+import com.ginka.explainstone.trumpet.TrumpetNetworking;
+import com.ginka.explainstone.voice.VoiceNetworking;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
@@ -43,6 +46,7 @@ public final class ExplainstoneNeoForge {
                 ModBlocks.registerBlocks();
             } else if (event.getRegistryKey().equals(Registries.ITEM)) {
                 ModBlocks.registerItems();
+                ModItems.register();
             } else if (event.getRegistryKey().equals(Registries.BLOCK_ENTITY_TYPE)) {
                 ModBlocks.speakerBlockEntity = new BlockEntityType<>(
                         SpeakerBlockEntity::new, Set.copyOf(ModBlocks.allBlocks()));
@@ -61,6 +65,7 @@ public final class ExplainstoneNeoForge {
         public static void onCreativeTab(BuildCreativeModeTabContentsEvent event) {
             if (event.getTabKey().equals(CreativeModeTabs.REDSTONE_BLOCKS)) {
                 ModBlocks.allBlocks().forEach(block -> event.accept(new ItemStack(block)));
+                event.accept(ModItems.newTrumpet());
             }
         }
 
@@ -74,6 +79,7 @@ public final class ExplainstoneNeoForge {
         @SubscribeEvent
         public static void onServerTick(ServerTickEvent.Post event) {
             SpeakerNetworking.tick(event.getServer());
+            VoiceNetworking.tick(event.getServer());
         }
 
         @SubscribeEvent
@@ -81,6 +87,8 @@ public final class ExplainstoneNeoForge {
             if (event.getEntity() instanceof ServerPlayer player) {
                 SpeakerNetworking.onDisconnect(player);
                 BroadcastRegistry.forgetPlayer(player);
+                VoiceNetworking.onDisconnect(player);
+                TrumpetNetworking.onDisconnect(player);
             }
         }
     }

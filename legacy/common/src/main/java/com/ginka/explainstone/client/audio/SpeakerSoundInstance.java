@@ -59,6 +59,13 @@ public abstract class SpeakerSoundInstance extends AbstractSoundInstance impleme
         return this.track;
     }
 
+    /** 让声音跟着移动的声源走（特朗谱拿在手上时要跟着玩家）。 */
+    public final void moveTo(double x, double y, double z) {
+        this.x = x;
+        this.y = y;
+        this.z = z;
+    }
+
     public final boolean isStarted() {
         return this.started;
     }

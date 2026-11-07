@@ -14,15 +14,11 @@ package com.ginka.explainstone.client;
 
 import com.ginka.explainstone.Explainstone;
 
-import com.ginka.explainstone.BroadcastTransmitterBlock;
-import com.ginka.explainstone.SongmelynBlock;
-import com.ginka.explainstone.SpeakerBlock;
 import com.ginka.explainstone.client.audio.AudioFilePicker;
 import com.ginka.explainstone.client.audio.AudioSources;
 import com.ginka.explainstone.client.audio.SpeakerAudio;
 import com.ginka.explainstone.client.audio.SpeakerAudioCache;
 import com.ginka.explainstone.client.widget.IntSlider;
-import com.ginka.explainstone.speaker.SpeakerBlockEntity;
 import com.ginka.explainstone.speaker.SpeakerPayloads;
 import com.ginka.explainstone.speaker.Track;
 import net.minecraft.client.Minecraft;
@@ -32,7 +28,6 @@ import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.network.chat.Component;
-import net.minecraft.core.BlockPos;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -52,7 +47,7 @@ public class SpeakerScreen extends Screen {
     private static final String CHANNEL_PREFIX = "350.";
     private static final int DEFAULT_CHANNEL = 234;
 
-    private final BlockPos pos;
+    private final SpeakerPanel panel;
     private int scroll;
     private boolean updatingField;
 
@@ -92,49 +87,13 @@ public class SpeakerScreen extends Screen {
     private boolean pendingRangeTransmit;
     private long pendingRangeAt;
 
-    public SpeakerScreen(BlockPos pos) {
-        super(Component.translatable("screen.explainstone.title.speaker"));
-        this.pos = pos;
+    public SpeakerScreen(SpeakerPanel panel) {
+        super(panel.title());
+        this.panel = panel;
     }
 
-    /** 当前方块的中文名（讲解石 / 颂美铃 / 广播发信器） 喵 */
-    /** 当前方块的名字翻译键 喵 */
-    private String blockNameKey() {
-        Minecraft client = Minecraft.getInstance();
-        if (client.level == null) {
-            return "screen.explainstone.title.speaker";
-        }
-        net.minecraft.world.level.block.Block block = client.level.getBlockState(this.pos).getBlock();
-        if (block instanceof BroadcastTransmitterBlock) {
-            return "screen.explainstone.title.transmitter";
-        }
-        if (block instanceof SongmelynBlock) {
-            return "screen.explainstone.title.songmelyn";
-        }
-        return "screen.explainstone.title.speaker";
-    }
-
-    private Component blockName() {
-        return Component.translatable(this.blockNameKey());
-    }
-
-    private boolean isTransmitter() {
-        Minecraft client = Minecraft.getInstance();
-        return client.level != null
-                && client.level.getBlockState(this.pos).getBlock() instanceof BroadcastTransmitterBlock;
-    }
-
-    @Override
-    public Component getTitle() {
-        return this.blockName();
-    }
-
-    private SpeakerBlockEntity speaker() {
-        Minecraft client = Minecraft.getInstance();
-        if (client.level == null) {
-            return null;
-        }
-        return client.level.getBlockEntity(this.pos) instanceof SpeakerBlockEntity be ? be : null;
+    private SpeakerPanel panel() {
+        return this.panel;
     }
 
     @Override
@@ -162,15 +121,13 @@ public class SpeakerScreen extends Screen {
 
         // 模式标签页 喵
         this.tabSelf = this.addRenderableWidget(Button.builder(Component.translatable("screen.explainstone.tab.self"), b -> {
-            SpeakerBlockEntity be = this.speaker();
-            if (be != null && be.isReceiveMode()) {
+            if (this.panel().receiveMode()) {
                 send(SpeakerPayloads.ACTION_TOGGLE_RECEIVE, 0);
             }
             this.refreshLabels();
         }).bounds(this.left, tabY, half, 18).build());
         this.tabReceive = this.addRenderableWidget(Button.builder(Component.translatable("screen.explainstone.tab.receive"), b -> {
-            SpeakerBlockEntity be = this.speaker();
-            if (be != null && !be.isReceiveMode()) {
+            if (!this.panel().receiveMode()) {
                 send(SpeakerPayloads.ACTION_TOGGLE_RECEIVE, 0);
             }
             this.refreshLabels();
@@ -186,10 +143,9 @@ public class SpeakerScreen extends Screen {
 
         // 收信开关（发信器则是定时） 喵
         this.modeButton = this.addRenderableWidget(Button.builder(Component.translatable("screen.explainstone.button.receive"), b -> {
-            if (this.isTransmitter()) {
+            if (this.panel().transmitter()) {
                 int[] steps = {0, 60, 180, 600};
-                SpeakerBlockEntity be = this.speaker();
-                int current = be == null ? 0 : be.getTimerSeconds();
+                int current = this.panel().timerSeconds();
                 int next = steps[0];
                 for (int i = 0; i < steps.length; i++) {
                     if (steps[i] == current) {
@@ -225,15 +181,13 @@ public class SpeakerScreen extends Screen {
                         b -> this.onImportClicked())
                 .bounds(this.left, this.row4, half, BTN_H).build());
         this.removeButton = this.addRenderableWidget(Button.builder(Component.translatable("screen.explainstone.button.remove"), b -> {
-            SpeakerBlockEntity be = this.speaker();
-            if (be != null && be.getSelected() >= 0) {
-                send(SpeakerPayloads.ACTION_REMOVE_TRACK, be.getSelected());
+            if (this.panel().selected() >= 0) {
+                send(SpeakerPayloads.ACTION_REMOVE_TRACK, this.panel().selected());
             }
         }).bounds(this.left + half + 4, this.row4, half, BTN_H).build());
 
         // 频率：350.xxx 喵
-        SpeakerBlockEntity be = this.speaker();
-        int channel = be == null ? DEFAULT_CHANNEL : be.getChannel();
+        int channel = this.panel().channel();
         this.channelField = new EditBox(this.font, this.left + 34, this.channelY, 62, 18,
                 Component.translatable("screen.explainstone.label.frequency"));
         this.channelField.setMaxLength(CHANNEL_PREFIX.length() + 3);
@@ -263,13 +217,13 @@ public class SpeakerScreen extends Screen {
         }).bounds(this.left + 162, this.channelY - 1, 56, BTN_H).build());
 
         // 距离滑块 喵
-        if (this.isTransmitter()) {
-            int value = be == null ? 512 : be.getTransmitRange();
+        if (this.panel().transmitter()) {
+            int value = this.panel().transmitRange();
             this.rangeSlider = this.addRenderableWidget(new IntSlider(this.left, this.sliderY, this.panelW, BTN_H,
                     Component.translatable("screen.explainstone.slider.range").getString(), 32, 512, value, v -> this.queueRange(v, true)));
         } else {
-            int distance = be == null ? 40 : be.getAudibleRange();
-            int volume = be == null ? 100 : be.getVolume();
+            int distance = this.panel().audibleRange();
+            int volume = this.panel().volume();
             this.rangeSlider = this.addRenderableWidget(new IntSlider(this.left, this.sliderY, half, BTN_H,
                     Component.translatable("screen.explainstone.slider.distance").getString(), 8, 48, distance, v -> this.queueRange(v, false)));
             this.volumeSlider = this.addRenderableWidget(new IntSlider(this.left + half + 4, this.sliderY, half, BTN_H,
@@ -344,9 +298,9 @@ public class SpeakerScreen extends Screen {
     }
 
     private void refreshLabels() {
-        SpeakerBlockEntity be = this.speaker();
-        boolean transmitter = this.isTransmitter();
-        boolean receive = !transmitter && be != null && be.isReceiveMode();
+        SpeakerPanel be = this.panel();
+        boolean transmitter = be.transmitter();
+        boolean receive = !transmitter && be.receiveMode();
 
         if (this.tabSelf != null) {
             this.tabSelf.visible = !transmitter;
@@ -364,7 +318,7 @@ public class SpeakerScreen extends Screen {
         }
         if (this.modeButton != null) {
             if (transmitter) {
-                int timer = be == null ? 0 : be.getTimerSeconds();
+                int timer = be.timerSeconds();
                 this.modeButton.setMessage(timer <= 0
                         ? Component.translatable("screen.explainstone.timer.off")
                         : Component.translatable("screen.explainstone.timer.minutes", timer / 60));
@@ -375,7 +329,7 @@ public class SpeakerScreen extends Screen {
             }
         }
         if (this.redstoneButton != null) {
-            boolean respect = be == null || be.isRespectRedstone();
+            boolean respect = be.respectRedstone();
             this.redstoneButton.setMessage(respect
                     ? Component.translatable("screen.explainstone.redstone.detect")
                     : Component.translatable("screen.explainstone.redstone.ignore"));
@@ -383,12 +337,11 @@ public class SpeakerScreen extends Screen {
         }
         if (this.playModeButton != null) {
             this.playModeButton.setMessage(Component.translatable("screen.explainstone.mode.label",
-                    be == null ? Component.translatable("screen.explainstone.mode.sequence")
-                            : Component.translatable("screen.explainstone.mode." + be.getMode().getSerializedName())));
+                    Component.translatable("screen.explainstone.mode." + be.mode().getSerializedName())));
             this.playModeButton.visible = !receive;
         }
         if (this.enableButton != null) {
-            boolean enabled = be == null || be.isSpeakerEnabled();
+            boolean enabled = be.speakerEnabled();
             this.enableButton.setMessage(enabled
                     ? Component.translatable("screen.explainstone.enable.on")
                     : Component.translatable("screen.explainstone.enable.off"));
@@ -410,7 +363,7 @@ public class SpeakerScreen extends Screen {
         if (this.channelField != null) {
             this.channelField.visible = showChannel;
             if (!this.channelField.isFocused()) {
-                this.setChannelField(be == null ? DEFAULT_CHANNEL : be.getChannel());
+                this.setChannelField(be.channel());
             }
         }
         if (this.confirmButton != null) {
@@ -422,14 +375,13 @@ public class SpeakerScreen extends Screen {
         this.flushPendingRange();
         this.flushPendingVolume();
         if (this.volumeSlider != null && this.pendingVolumeValue < 0) {
-            int actual = be == null ? 100 : be.getVolume();
+            int actual = be.volume();
             if (this.volumeSlider.getIntValue() != actual) {
                 this.volumeSlider.setIntValue(actual);
             }
         }
         if (this.rangeSlider != null && this.pendingRangeValue < 0) {
-            int actual = transmitter ? (be == null ? 512 : be.getTransmitRange())
-                    : (be == null ? 40 : be.getAudibleRange());
+            int actual = transmitter ? be.transmitRange() : be.audibleRange();
             if (this.rangeSlider.getIntValue() != actual) {
                 this.rangeSlider.setIntValue(actual);
             }
@@ -437,26 +389,30 @@ public class SpeakerScreen extends Screen {
     }
 
     private void send(int action, int value) {
-        if (Explainstone.network().canSendToServer(SpeakerPayloads.Action.ID)) {
-            Explainstone.network().sendToServer(new SpeakerPayloads.Action(this.pos, action, value));
-        }
+        this.panel().send(action, value);
     }
 
     // ---------------------------------------------------------------- 渲染 喵
     @Override
+    public void removed() {
+        if (this.panel instanceof TrumpetPanel trumpet) {
+            TrumpetPanel.deactivate(trumpet);
+        }
+        super.removed();
+    }
+
+    @Override
     public void extractRenderState(GuiGraphicsExtractor context, int mouseX, int mouseY, float delta) {
         super.extractRenderState(context, mouseX, mouseY, delta);
 
-        SpeakerBlockEntity be = this.speaker();
-        boolean transmitter = this.isTransmitter();
-        List<Track> tracks = be == null ? List.of() : be.getTracks();
-        int selected = be == null ? -1 : be.getSelected();
-        boolean playing = be != null && (transmitter
-                ? be.getBlockState().getValue(BroadcastTransmitterBlock.PLAYING)
-                : be.getBlockState().getValue(SpeakerBlock.PLAYING));
-        boolean receive = !transmitter && be != null && be.isReceiveMode();
+        SpeakerPanel be = this.panel();
+        boolean transmitter = be.transmitter();
+        List<Track> tracks = be.tracks();
+        int selected = be.selected();
+        boolean playing = be.playing();
+        boolean receive = !transmitter && be.receiveMode();
 
-        Component title = this.blockName();
+        Component title = be.title();
         if (playing) {
             title = title.copy().append(Component.translatable(
                     transmitter ? "screen.explainstone.sending" : "screen.explainstone.playing"));
@@ -498,9 +454,7 @@ public class SpeakerScreen extends Screen {
                             this.left + this.panelW - 4 - this.font.width(length), y, 0xB0C8FF);
                 }
             }
-            float[] progress = transmitter
-                    ? SpeakerAudio.broadcastProgress(be == null ? 0 : be.getChannel())
-                    : SpeakerAudio.progress(this.pos);
+            float[] progress = be.progress();
             if (progress != null) {
                 int barTop = this.hintY - 4;
                 int barBottom = this.hintY + 8;
@@ -542,12 +496,12 @@ public class SpeakerScreen extends Screen {
         double mouseX = event.x();
         double mouseY = event.y();
         int button = event.button();
-        SpeakerBlockEntity be = this.speaker();
-        boolean receive = !this.isTransmitter() && be != null && be.isReceiveMode();
+        SpeakerPanel be = this.panel();
+        boolean receive = !be.transmitter() && be.receiveMode();
         if (!receive && button == 0 && mouseX >= this.left && mouseX <= this.left + this.panelW
                 && mouseY >= this.listTop - 1 && mouseY < this.listTop + this.listRows * ROW_H) {
             int index = this.scroll + (int) ((mouseY - this.listTop + 1) / ROW_H);
-            if (be != null && index >= 0 && index < be.getTracks().size()) {
+            if (index >= 0 && index < be.tracks().size()) {
                 send(SpeakerPayloads.ACTION_SELECT, index);
                 return true;
             }
@@ -557,8 +511,7 @@ public class SpeakerScreen extends Screen {
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
-        SpeakerBlockEntity be = this.speaker();
-        int maxScroll = be == null ? 0 : Math.max(0, be.getTracks().size() - this.listRows);
+        int maxScroll = Math.max(0, this.panel().tracks().size() - this.listRows);
         this.scroll = Math.max(0, Math.min(maxScroll, this.scroll - (int) Math.signum(verticalAmount)));
         return true;
     }
@@ -589,7 +542,7 @@ public class SpeakerScreen extends Screen {
 
     private void finishImport(Minecraft client, Path inbox, String chosen) {
         if (chosen != null) {
-            SpeakerAudioCache.importFile(client, this.pos, Path.of(chosen));
+            this.panel().importFile(Path.of(chosen));
             return;
         }
         this.importFromInbox(client, inbox);
@@ -599,7 +552,7 @@ public class SpeakerScreen extends Screen {
         List<Path> files = listInbox(inbox);
         if (!files.isEmpty()) {
             for (Path file : files) {
-                SpeakerAudioCache.importFile(client, this.pos, file);
+                this.panel().importFile(file);
             }
             info(client, Component.translatable("message.explainstone.import.inbox", files.size()));
         } else {
@@ -618,7 +571,7 @@ public class SpeakerScreen extends Screen {
 
     private void info(Minecraft client, Component text) {
         if (client.player != null) {
-            client.player.sendSystemMessage(Component.translatable("message.explainstone.prefix", this.blockName(), text));
+            client.player.sendSystemMessage(Component.translatable("message.explainstone.prefix", this.panel().title(), text));
         }
     }
 

@@ -9,12 +9,16 @@
  */
 package com.ginka.explainstone.speaker;
 
+import com.mojang.serialization.Codec;
 import net.minecraft.util.StringRepresentable;
 
 public enum PlayMode implements StringRepresentable {
     SEQUENCE("sequence", "顺序"),
     REPEAT_ONE("repeat_one", "单曲"),
     SHUFFLE("shuffle", "随机");
+
+    /** 存档与网络同步共用，字符串形式与 {@link #getSerializedName()} 一致。 */
+    public static final Codec<PlayMode> CODEC = StringRepresentable.fromValues(PlayMode::values);
 
     private final String id;
     private final String label;
