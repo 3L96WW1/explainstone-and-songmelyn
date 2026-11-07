@@ -12,6 +12,7 @@ package com.ginka.explainstone.voice;
 import com.ginka.explainstone.Explainstone;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.player.Player;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -46,7 +47,7 @@ public final class VoiceNetworking {
         }
         var level = sender.level();
         double rangeSq = MAX_RANGE * MAX_RANGE;
-        for (ServerPlayer listener : level.players()) {
+        for (Player listener : level.players()) {
             if (listener == sender) {
                 continue;
             }
@@ -86,7 +87,7 @@ public final class VoiceNetworking {
     private static void broadcastState(ServerPlayer speaker, boolean speaking) {
         var level = speaker.level();
         double rangeSq = MAX_RANGE * MAX_RANGE;
-        for (ServerPlayer listener : level.players()) {
+        for (Player listener : level.players()) {
             if (listener == speaker) {
                 continue;
             }

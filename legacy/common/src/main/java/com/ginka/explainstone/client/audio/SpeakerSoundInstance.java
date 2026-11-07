@@ -8,7 +8,7 @@
 package com.ginka.explainstone.client.audio;
 
 import com.ginka.explainstone.speaker.Track;
-import net.minecraft.util.Util;
+import net.minecraft.Util;
 import net.minecraft.client.resources.sounds.AbstractSoundInstance;
 import net.minecraft.client.resources.sounds.SoundInstance;
 import net.minecraft.client.resources.sounds.TickableSoundInstance;

@@ -11,6 +11,7 @@ package com.ginka.explainstone.voice;
 
 import com.ginka.explainstone.Explainstone;
 import com.ginka.explainstone.ModItems;
+import com.ginka.explainstone.client.ClientCompat;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.resources.Identifier;
@@ -56,7 +57,7 @@ public final class VoiceKeybinds {
         if (talk == null) {
             return;
         }
-        boolean holding = client.gui.screen() == null
+        boolean holding = ClientCompat.currentScreen(client) == null
                 && client.player != null
                 && (client.player.getMainHandItem().is(ModItems.trumpet)
                     || client.player.getOffhandItem().is(ModItems.trumpet));
@@ -69,7 +70,6 @@ public final class VoiceKeybinds {
     }
 
     private static boolean isDown(Minecraft client) {
-        // 界面打开时按键会被输入框吃掉，这里也统一不算
         return talk.isDown();
     }
 }

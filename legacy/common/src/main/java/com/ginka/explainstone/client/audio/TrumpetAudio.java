@@ -222,7 +222,7 @@ public final class TrumpetAudio {
             Minecraft client = Minecraft.getInstance();
             if (client.player != null) {
                 client.player.displayClientMessage(
-                        Component.translatable("message.explainstone.import.ok", label));
+                        Component.translatable("message.explainstone.import.ok", label), false);
             }
         }
     }

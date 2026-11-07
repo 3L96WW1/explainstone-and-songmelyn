@@ -296,7 +296,7 @@ public final class ServerAudioStore {
         }
     }
 
-    static int oggSeconds(byte[] data) {
+    public static int oggSeconds(byte[] data) {
         int rate = sampleRate(data);
         if (rate <= 0) {
             return -1;

@@ -493,9 +493,6 @@ public class SpeakerScreen extends Screen {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        double mouseX = mouseX;
-        double mouseY = mouseY;
-        int button = button;
         SpeakerPanel be = this.panel();
         boolean receive = !be.transmitter() && be.receiveMode();
         if (!receive && button == 0 && mouseX >= this.left && mouseX <= this.left + this.panelW

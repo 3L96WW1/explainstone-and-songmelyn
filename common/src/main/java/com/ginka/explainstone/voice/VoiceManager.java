@@ -11,6 +11,7 @@ package com.ginka.explainstone.voice;
 
 import com.ginka.explainstone.Explainstone;
 import com.ginka.explainstone.client.ExplainstoneClient;
+import com.ginka.explainstone.client.ClientCompat;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.world.entity.player.Player;
@@ -203,8 +204,12 @@ public final class VoiceManager {
 
     /** 走原版右上角的 toast，而不是聊天栏——开麦失败属于"系统通知"。 */
     private static void toast(Minecraft client, String key) {
+        net.minecraft.client.gui.components.toasts.ToastManager toasts = ClientCompat.toastManager(client);
+        if (toasts == null) {
+            return;
+        }
         net.minecraft.client.gui.components.toasts.SystemToast.add(
-                client.gui.toastManager(),
+                toasts,
                 net.minecraft.client.gui.components.toasts.SystemToast.SystemToastId.PERIODIC_NOTIFICATION,
                 net.minecraft.network.chat.Component.translatable("message.explainstone.voice.title"),
                 net.minecraft.network.chat.Component.translatable(key));

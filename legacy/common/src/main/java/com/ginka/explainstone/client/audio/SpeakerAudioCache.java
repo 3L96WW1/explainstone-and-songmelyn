@@ -34,6 +34,15 @@ public final class SpeakerAudioCache {
     private SpeakerAudioCache() {
     }
 
+    /** 导入的落地目标：方块版发 SpeakerPayloads，特朗谱版发 TrumpetPayloads。 */
+    public interface ImportTarget {
+        void sendQuery(String label, String sha1, int total);
+
+        void sendChunk(String label, String sha1, int index, int total, byte[] data);
+
+        void onDone(String sha1, String label);
+    }
+
     /** 服务端先发元信息：拿到总分片数才能分配缓冲，也顺便知道该不该再要。 */
     public static void onAudioMeta(SpeakerPayloads.AudioMeta payload) {
         if (payload.total() <= 0) {
@@ -94,7 +103,7 @@ public final class SpeakerAudioCache {
         }
         if (payload.fromChunk() >= pending.total) {
             // 服务端已有这份数据，一块都不用传
-            SpeakerAudio.onImportDone(pending.sha1, pending.label);
+            pending.target.onDone(pending.sha1, pending.label);
             return;
         }
         upload(pending, payload.fromChunk());
@@ -107,6 +116,10 @@ public final class SpeakerAudioCache {
      * 这是内容寻址最直接的收益：同一首歌导入十次，只有第一次真的走网络。
      */
     public static void importFile(Minecraft client, BlockPos pos, Path path) {
+        importFile(client, new BlockImportTarget(pos), path);
+    }
+
+    public static void importFile(Minecraft client, ImportTarget target, Path path) {
         try {
             long size = Files.size(path);
             if (size <= 0 || size > 6L * 1024 * 1024) {
@@ -128,8 +141,8 @@ public final class SpeakerAudioCache {
                 AudioSources.saveLocal(sha1, bytes);
             }
             int total = (bytes.length + SpeakerPayloads.CHUNK_SIZE - 1) / SpeakerPayloads.CHUNK_SIZE;
-            IMPORTS.put(sha1, new PendingImport(pos, label, sha1, bytes, total));
-            Explainstone.network().sendToServer(new SpeakerPayloads.ImportQuery(pos, label, sha1, total));
+            IMPORTS.put(sha1, new PendingImport(target, label, sha1, bytes, total));
+            target.sendQuery(label, sha1, total);
         } catch (IOException e) {
             message(client, Component.translatable("message.explainstone.import.read_failed", String.valueOf(e.getMessage())));
             LOGGER.warn("导入音频失败", e);
@@ -143,8 +156,7 @@ public final class SpeakerAudioCache {
             int len = Math.min(SpeakerPayloads.CHUNK_SIZE, pending.bytes.length - from);
             byte[] part = new byte[len];
             System.arraycopy(pending.bytes, from, part, 0, len);
-            Explainstone.network().sendToServer(
-                    new SpeakerPayloads.ImportChunk(pending.pos, pending.label, pending.sha1, i, pending.total, part));
+            pending.target.sendChunk(pending.label, pending.sha1, i, pending.total, part);
         }
     }
 
@@ -179,16 +191,35 @@ public final class SpeakerAudioCache {
         }
     }
 
+    /** 方块（讲解石 / 颂美铃 / 广播发信器）的导入目标。 */
+    private record BlockImportTarget(BlockPos pos) implements ImportTarget {
+        @Override
+        public void sendQuery(String label, String sha1, int total) {
+            Explainstone.network().sendToServer(new SpeakerPayloads.ImportQuery(this.pos, label, sha1, total));
+        }
+
+        @Override
+        public void sendChunk(String label, String sha1, int index, int total, byte[] data) {
+            Explainstone.network().sendToServer(
+                    new SpeakerPayloads.ImportChunk(this.pos, label, sha1, index, total, data));
+        }
+
+        @Override
+        public void onDone(String sha1, String label) {
+            SpeakerAudio.onImportDone(sha1, label);
+        }
+    }
+
     /** 一个还没上传完的导入。 */
     private static final class PendingImport {
-        private final BlockPos pos;
+        private final ImportTarget target;
         private final String label;
         private final String sha1;
         private final byte[] bytes;
         private final int total;
 
-        private PendingImport(BlockPos pos, String label, String sha1, byte[] bytes, int total) {
-            this.pos = pos;
+        private PendingImport(ImportTarget target, String label, String sha1, byte[] bytes, int total) {
+            this.target = target;
             this.label = label;
             this.sha1 = sha1;
             this.bytes = bytes;
