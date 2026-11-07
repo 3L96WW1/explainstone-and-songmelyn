@@ -41,7 +41,7 @@ public final class TrumpetPanel implements SpeakerPanel {
         if (client.player == null) {
             return -1;
         }
-        return client.player.getInventory().getSelectedSlot();
+        return client.player.getInventory().selected;
     }
 
     private static TrumpetState currentState(int slot) {

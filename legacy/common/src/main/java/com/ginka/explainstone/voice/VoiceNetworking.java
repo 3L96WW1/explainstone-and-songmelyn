@@ -45,9 +45,9 @@ public final class VoiceNetworking {
         if (payload.opus().length == 0 || payload.opus().length > OpusCodec.MAX_PACKET) {
             return;
         }
-        var level = sender.level();
+        var level = sender.serverLevel();
         double rangeSq = MAX_RANGE * MAX_RANGE;
-        for (Player listener : level.players()) {
+        for (ServerPlayer listener : level.players()) {
             if (listener == sender) {
                 continue;
             }
@@ -85,9 +85,9 @@ public final class VoiceNetworking {
     }
 
     private static void broadcastState(ServerPlayer speaker, boolean speaking) {
-        var level = speaker.level();
+        var level = speaker.serverLevel();
         double rangeSq = MAX_RANGE * MAX_RANGE;
-        for (Player listener : level.players()) {
+        for (ServerPlayer listener : level.players()) {
             if (listener == speaker) {
                 continue;
             }
